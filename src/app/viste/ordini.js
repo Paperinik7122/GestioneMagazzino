@@ -1,5 +1,5 @@
 import { getDb, modificato } from '../../store.js';
-import { elencoOrdini, creaOrdine, dettaglioOrdine } from '../../domain/ordini.js';
+import { elencoOrdini, creaOrdine } from '../../domain/ordini.js';
 import { elencoContatti } from '../../domain/contatti.js';
 import { oggiIso } from '../../domain/errori.js';
 import { icona, chip, tagTipo, esc, euro, dataIt, num, intestazione, campo } from '../../ui/kit.js';
@@ -96,21 +96,4 @@ export function foglioNuovoOrdine(tipoIniziale = 'V') {
       location.hash = `#/ordine/${id}`;
     } catch (e) { mostraErrore(radice, e); }
   };
-}
-
-/** Provvisoria: la schermata completa dell'ordine arriva con il pezzo 2. */
-export function ordineProvvisorio(vista, id) {
-  let d;
-  try { d = dettaglioOrdine(getDb(), id); } catch { d = null; }
-  if (!d) {
-    vista.innerHTML = `${intestazione('Ordine', { indietro: '#/ordini' })}<div class="vuoto"><span class="ic">${icona('warn', 30)}</span><b>Ordine non trovato</b></div>`;
-    return;
-  }
-  const o = d.ordine;
-  vista.innerHTML = `${intestazione(`Ordine #${o.id}`, { indietro: '#/ordini' })}
-    <div class="ordine ${o.tipo}"><div class="r1"><span class="chi">${esc(o.contatto)}</span><span class="tot">${euro(d.totale)}</span></div>
-    <div class="r2">${tagTipo(o.tipo)}</div>
-    <div class="meta">${dataIt(o.data_emissione)}${o.catalogo ? ` · catalogo ${esc(o.catalogo)}` : ''} · ${num(d.righe.length, 'prodotto', 'prodotti')}</div></div>
-    <div class="vuoto"><span class="ic">${icona('orders', 30)}</span><b>Dettaglio in arrivo</b>
-    <span>Prodotti, collegamento al magazzino e ricezione arrivano nel prossimo aggiornamento.</span></div>`;
 }

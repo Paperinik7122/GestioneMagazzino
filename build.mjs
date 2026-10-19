@@ -1,11 +1,11 @@
-// Costruisce la PWA in dist/: node build.mjs [--watch]
+// Costruisce la PWA in dist/ (oppure in docs/ con --docs, la copia pronta da usare senza Node)
 import { build } from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
 const radice = path.dirname(new URL(import.meta.url).pathname);
-const dist = path.join(radice, 'dist');
+const dist = path.join(radice, process.argv.includes('--docs') ? 'docs' : 'dist');
 const nm = (...p) => path.join(radice, 'node_modules', ...p);
 
 fs.rmSync(dist, { recursive: true, force: true });

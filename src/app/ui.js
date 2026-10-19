@@ -7,6 +7,7 @@ const $ = (id) => document.getElementById(id);
 /** Apre un foglio con il contenuto dato. Restituisce { chiudi, radice }. */
 export function apriFoglio(html) {
   const strato = $('strato');
+  $('toast').classList.remove('su');
   const velo = document.createElement('div');
   velo.className = 'velo';
   velo.innerHTML = `<div class="foglio" role="dialog" aria-modal="true">${html}</div>`;

@@ -4,7 +4,8 @@ import { elencoOrdini } from '../domain/ordini.js';
 import { icona, esc } from '../ui/kit.js';
 import { toast } from './ui.js';
 import { home } from './viste/home.js';
-import { ordini, ordineProvvisorio } from './viste/ordini.js';
+import { ordini } from './viste/ordini.js';
+import { ordine } from './viste/ordine.js';
 import { contatti } from './viste/contatti.js';
 import { magazzinoProvvisorio, nonTrovata } from './viste/segnaposto.js';
 
@@ -18,7 +19,7 @@ const SEZIONI = [
 const ROTTE = {
   '': ['home', home],
   ordini: ['ordini', ordini],
-  ordine: ['ordini', (v, q, id) => ordineProvvisorio(v, Number(id))],
+  ordine: ['ordini', ordine],
   magazzino: ['magazzino', magazzinoProvvisorio],
   contatti: ['contatti', contatti],
 };

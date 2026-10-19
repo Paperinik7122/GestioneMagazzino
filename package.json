@@ -4,6 +4,7 @@
   "description": "",
   "scripts": {
     "build": "node build.mjs",
+    "build:docs": "node build.mjs --docs",
     "test": "node --test test/*.test.js"
   },
   "keywords": [],
