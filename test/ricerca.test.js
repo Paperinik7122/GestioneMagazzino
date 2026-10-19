@@ -45,3 +45,14 @@ test('codici: suggerimenti per codice e per nome, con codice e nome insieme', as
   // il codice scritto con spazi o trattini ritrova quello esistente invece di crearne uno nuovo
   assert.equal(assicuraCodice(d, '25-689', 'altro nome').codice, '25689');
 });
+
+test('contatti: la ricerca trova anche per telefono e ignora accenti e punteggiatura', async () => {
+  const d = await db();
+  const a = assicuraContatto(d, 'José Müller', 'C');
+  salvaContatto(d, a.id, { nome: 'José Müller', tipo: 'C', telefono: '333 123 4567' });
+  assicuraContatto(d, 'Anna', 'C');
+  assert.deepEqual(cercaContatti(d, 'jose muller').map((c) => c.nome), ['José Müller']);
+  assert.deepEqual(cercaContatti(d, '3331234').map((c) => c.nome), ['José Müller']);
+  assert.deepEqual(cercaContatti(d, 'anna 333'), []);
+  assert.equal(cercaContatti(d, 'a', null, Infinity).length, 1);
+});

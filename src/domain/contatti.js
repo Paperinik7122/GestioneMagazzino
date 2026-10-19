@@ -33,8 +33,9 @@ export function cercaContatti(db, testo, tipo = null, limite = 8) {
   if (!w.length) return [];
   const k = compatta(testo);
   return elencoContatti(db, tipo)
-    .map((c) => ({ c, nome: parole(c.nome) }))
-    .filter(({ nome }) => w.every((x) => nome.some((y) => y.includes(x))))
+    .map((c) => ({ c, nome: parole(c.nome), tel: compatta(c.telefono) }))
+    // ogni parola scritta deve comparire nel nome (o, se ha cifre, nel telefono)
+    .filter(({ nome, tel }) => w.every((x) => nome.some((y) => y.includes(x)) || (/\d/.test(x) && tel.includes(x))))
     .map(({ c, nome }) => ({
       ...c,
       _p: (compatta(c.nome) === k ? 0 : compatta(c.nome).startsWith(k) ? 1 : nome[0]?.startsWith(w[0]) ? 2 : 3),
