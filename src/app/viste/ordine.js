@@ -4,9 +4,8 @@ import {
   dettaglioOrdine, aggiungiRighe, eliminaRiga, collegaRiga, scollegaRiga, consegnaOrdine, eliminaOrdine, modificaOrdine,
 } from '../../domain/ordini.js';
 import { impostaQuantitaRicevuta, aggiungiOmaggio, chiudiRicezione, proposteAutocompila, applicaAutocompila } from '../../domain/ricezione.js';
-import { disponibilita, cercaCodici } from '../../domain/codici.js';
-import { elencoContatti } from '../../domain/contatti.js';
-import { scalar } from '../../db/util.js';
+import { disponibilita } from '../../domain/codici.js';
+import { comboContatto, chiediContatto, comboProdotto } from '../campi.js';
 import { oggiIso, ErroreDominio } from '../../domain/errori.js';
 import { icona, chip, tagTipo, esc, euro, dataIt, num, intestazione, campo } from '../../ui/kit.js';
 import { apriFoglio, mostraErrore, conferma, toast } from '../ui.js';
@@ -181,7 +180,7 @@ function foglioOmaggio(o) {
     <p class="muted piccolo" style="margin-bottom:12px">Per promozioni o regali del fornitore non presenti nell’ordine: risulta già arrivato, a prezzo zero.</p>
     ${campiProdotto({ prezzo: false })}
     <div class="barra"><button class="btn sec" data-chiudi>Annulla</button><button class="btn" id="ok">Aggiungi</button></div>`);
-  collegaSuggerimenti(radice, { prezzo: false });
+  comboProdotto(radice, { prezzo: false });
   radice.querySelector('#ok').onclick = () => {
     const v = (s) => radice.querySelector(s).value;
     if (applica(() => aggiungiOmaggio(getDb(), o.id, { codice: v('#f-cod'), nome: v('#f-nome'), quantita: v('#f-q') }), radice).ok) { chiudi(); ridisegna(); }
@@ -266,55 +265,33 @@ async function eliminaOrdineConferma(o) {
 
 function foglioModifica(o) {
   const db = getDb();
-  const nomi = elencoContatti(db, o.tipo === 'A' ? 'F' : 'C').map((c) => `<option value="${esc(c.nome)}">`).join('');
   const { chiudi, radice } = apriFoglio(`<h2>Modifica ordine #${o.id}</h2>
-    ${campo('Nome', `<input id="f-nome" list="l-nomi" value="${esc(o.contatto)}" autocomplete="off" autocapitalize="words"><datalist id="l-nomi">${nomi}</datalist>`)}
+    ${campo('Nome', `<input id="f-nome" value="${esc(o.contatto)}" autocomplete="off" autocapitalize="words">`)}
     ${campo('Data', `<input id="f-data" type="date" value="${esc(o.data_emissione)}">`)}
     ${campo('Numero catalogo', `<input id="f-cat" inputmode="numeric" value="${esc(o.catalogo)}" autocomplete="off">`)}
     ${campo('Note', `<textarea id="f-note">${esc(o.note)}</textarea>`)}
     <div class="barra"><button class="btn sec" data-chiudi>Annulla</button><button class="btn" id="ok">Salva</button></div>`);
-  radice.querySelector('#ok').onclick = () => {
+  comboContatto(radice.querySelector('#f-nome'), o.tipo === 'A' ? 'F' : 'C');
+  radice.querySelector('#ok').onclick = async () => {
     const v = (s) => radice.querySelector(s).value;
-    if (applica(() => modificaOrdine(db, o.id, { contatto: v('#f-nome'), data: v('#f-data'), catalogo: v('#f-cat'), note: v('#f-note') }), radice).ok) { chiudi(); ridisegna(); }
+    const nome = await chiediContatto(v('#f-nome'), o.tipo === 'A' ? 'F' : 'C');
+    if (nome === null) return;
+    if (applica(() => modificaOrdine(db, o.id, { contatto: nome, data: v('#f-data'), catalogo: v('#f-cat'), note: v('#f-note') }), radice).ok) { chiudi(); ridisegna(); }
   };
 }
 
 /** Campi codice/nome/prezzo/quantità, con suggerimenti dal catalogo dei codici già noti. */
 function campiProdotto({ prezzo = true } = {}) {
-  return `${campo('Codice', '<input id="f-cod" list="l-cod" autocomplete="off" autocapitalize="characters" autofocus><datalist id="l-cod"></datalist>')}
+  return `${campo('Codice', '<input id="f-cod" autocomplete="off" autocapitalize="characters" autofocus>')}
     ${campo('Nome', '<input id="f-nome" autocomplete="off">')}
     ${prezzo ? campo('Prezzo di catalogo (€)', '<input id="f-prezzo" inputmode="decimal" autocomplete="off" placeholder="es. 6,50">') : ''}
     ${campo('Quantità', '<input id="f-q" type="number" min="1" max="200" value="1" inputmode="numeric">')}`;
 }
 
-function collegaSuggerimenti(radice, { prezzo = true } = {}) {
-  const db = getDb();
-  const cod = radice.querySelector('#f-cod');
-  const nome = radice.querySelector('#f-nome');
-  const dl = radice.querySelector('#l-cod');
-  let trovati = [];
-  const riempi = () => {
-    const t = trovati.find((x) => x.codice.toLowerCase() === cod.value.trim().toLowerCase());
-    if (!t) return;
-    if (!nome.value) nome.value = t.nome;
-    const pr = radice.querySelector('#f-prezzo');
-    if (prezzo && pr && !pr.value) {
-      const ultimo = scalar(db, 'SELECT prezzo FROM righe_ordine WHERE codice = ? AND omaggio = 0 ORDER BY id DESC LIMIT 1', [t.codice]);
-      if (ultimo !== undefined && ultimo !== null) pr.value = String(ultimo).replace('.', ',');
-    }
-  };
-  cod.addEventListener('input', () => {
-    trovati = cercaCodici(db, cod.value);
-    dl.innerHTML = trovati.map((t) => `<option value="${esc(t.codice)}" label="${esc(t.nome)}">`).join('');
-    riempi();
-  });
-  cod.addEventListener('change', riempi);
-}
-
 function foglioProdotto(o) {
   const { chiudi, radice } = apriFoglio(`<h2>Aggiungi prodotto</h2>${campiProdotto()}
     <div class="barra"><button class="btn sec" data-chiudi>Annulla</button><button class="btn" id="ok">Aggiungi</button></div>`);
-  collegaSuggerimenti(radice);
+  comboProdotto(radice);
   radice.querySelector('#ok').onclick = () => {
     const v = (s) => radice.querySelector(s).value;
     if (applica(() => aggiungiRighe(getDb(), o.id, { codice: v('#f-cod'), nome: v('#f-nome'), prezzo: v('#f-prezzo'), quantita: v('#f-q') }), radice).ok) { chiudi(); ridisegna(); }

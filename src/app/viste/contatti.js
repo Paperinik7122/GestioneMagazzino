@@ -2,6 +2,7 @@ import { getDb, modificato } from '../../store.js';
 import { elencoContatti, assicuraContatto, salvaContatto, eliminaContatto, unisciContatti } from '../../domain/contatti.js';
 import { icona, esc, num, intestazione, campo } from '../../ui/kit.js';
 import { apriFoglio, mostraErrore, conferma, toast } from '../ui.js';
+import { chiediContatto } from '../campi.js';
 
 const filtro = { tipo: 'T', testo: '' };
 const iniziali = (n) => n.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('') || '?';
@@ -57,9 +58,11 @@ function foglioNuovo(dopo) {
   radice.querySelectorAll('[data-tp]').forEach((b) => {
     b.onclick = () => { tipo = b.dataset.tp; radice.querySelectorAll('[data-tp]').forEach((x) => x.setAttribute('aria-pressed', x === b)); };
   });
-  radice.querySelector('#ok').onclick = () => {
+  radice.querySelector('#ok').onclick = async () => {
     try {
-      const c = assicuraContatto(getDb(), radice.querySelector('#f-nome').value, tipo);
+      const nome = await chiediContatto(radice.querySelector('#f-nome').value, tipo);
+      if (nome === null) return;
+      const c = assicuraContatto(getDb(), nome, tipo);
       modificato(); chiudi(); dopo();
       foglioContatto(c.id, dopo);
     } catch (e) { mostraErrore(radice, e); }

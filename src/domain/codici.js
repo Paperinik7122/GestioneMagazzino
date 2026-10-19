@@ -1,6 +1,6 @@
 // Codici prodotto e prodotti equivalenti ("simili").
 import { all, get, run } from '../db/util.js';
-import { norm, chiaveEquivalenza } from '../db/normalizza.js';
+import { norm, chiaveEquivalenza, parole, compatta } from '../db/normalizza.js';
 import { richiedi } from './errori.js';
 
 /** Restituisce il codice; se è nuovo lo crea e lo mette nel gruppo di equivalenza giusto. */
@@ -8,9 +8,11 @@ export function assicuraCodice(db, codice, nome) {
   const cod = norm(codice);
   const nm = norm(nome);
   richiedi(cod, 'Serve il codice del prodotto.');
-  richiedi(nm, 'Serve il nome del prodotto.');
-  const esistente = get(db, 'SELECT * FROM codici WHERE codice = ?', [cod]);
+  const esistente = get(db, 'SELECT * FROM codici WHERE codice = ?', [cod])
+    // "25 689" o "25-689" sono il codice 25689
+    ?? all(db, 'SELECT * FROM codici').find((c) => compatta(c.codice) === compatta(cod));
   if (esistente) return esistente;
+  richiedi(nm, 'Serve il nome del prodotto.');
   const k = chiaveEquivalenza(nm);
   let prodottoId = null;
   if (k) {
@@ -72,17 +74,34 @@ export function disponibilita(db, codice) {
   };
 }
 
-const escLike = (s) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
-
-/** Suggerimenti per i campi "codice o nome". */
-export function cercaCodici(db, testo, limite = 8) {
-  const t = norm(testo);
-  if (!t) return [];
-  const like = `%${escLike(t)}%`;
-  return all(db, `SELECT c.codice, c.nome,
-      (SELECT COUNT(*) FROM magazzino m WHERE m.codice = c.codice AND m.in_magazzino = 1) AS in_magazzino
-    FROM codici c
-    WHERE c.codice LIKE ? ESCAPE '\\' OR c.nome LIKE ? ESCAPE '\\'
-    ORDER BY (c.codice = ?) DESC, (c.codice LIKE ? ESCAPE '\\') DESC, c.nome
-    LIMIT ?`, [like, like, t, `${escLike(t)}%`, limite]);
+/**
+ * Suggerimenti per i campi "codice" e "nome". Si confrontano le parole senza badare a
+ * maiuscole, accenti, punteggiatura e spazi. `campo`: 'codice' cerca solo nei codici,
+ * 'nome' solo nei nomi, altrimenti in entrambi. Ogni risultato è un codice col suo nome:
+ * scelto uno, si compilano entrambi i campi.
+ */
+export function cercaCodici(db, testo, limite = 8, campo = null) {
+  const w = parole(testo);
+  if (!w.length) return [];
+  const k = compatta(testo);
+  const righe = all(db, `SELECT c.codice, c.nome,
+      (SELECT COUNT(*) FROM magazzino m WHERE m.codice = c.codice AND m.in_magazzino = 1) AS in_magazzino,
+      (SELECT r.prezzo FROM righe_ordine r WHERE r.codice = c.codice AND r.omaggio = 0 ORDER BY r.id DESC LIMIT 1) AS ultimo_prezzo
+    FROM codici c`);
+  const out = [];
+  for (const r of righe) {
+    const kc = compatta(r.codice);
+    const wn = parole(r.nome);
+    const inCodice = kc.includes(k);
+    const inNome = w.every((x) => wn.some((y) => y.includes(x)));
+    if (campo === 'codice' ? !inCodice : campo === 'nome' ? !inNome : !(inCodice || inNome)) continue;
+    let p;
+    if (campo === 'nome') p = compatta(r.nome) === k ? 0 : wn[0]?.startsWith(w[0]) ? 1 : 2;
+    else p = kc === k ? 0 : kc.startsWith(k) ? 1 : inCodice ? 2 : 3;
+    out.push({ ...r, _p: p });
+  }
+  return out
+    .sort((a, b) => a._p - b._p || b.in_magazzino - a.in_magazzino || a.nome.localeCompare(b.nome, 'it') || a.codice.localeCompare(b.codice))
+    .slice(0, limite)
+    .map(({ _p, ...r }) => r);
 }

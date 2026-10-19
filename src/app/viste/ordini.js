@@ -1,9 +1,9 @@
 import { getDb, modificato } from '../../store.js';
 import { elencoOrdini, creaOrdine } from '../../domain/ordini.js';
-import { elencoContatti } from '../../domain/contatti.js';
 import { oggiIso } from '../../domain/errori.js';
 import { icona, chip, tagTipo, esc, euro, dataIt, num, intestazione, campo } from '../../ui/kit.js';
 import { apriFoglio, mostraErrore } from '../ui.js';
+import { comboContatto, chiediContatto } from '../campi.js';
 
 const filtro = { tipo: 'T', testo: '', chiusi: false };
 
@@ -65,30 +65,29 @@ export function ordini(vista, query) {
 export function foglioNuovoOrdine(tipoIniziale = 'V') {
   const db = getDb();
   let tipo = tipoIniziale;
-  const nomi = (t) => elencoContatti(db, t).map((c) => `<option value="${esc(c.nome)}">`).join('');
   const { chiudi, radice } = apriFoglio(`<h2>Nuovo ordine</h2>
     <div class="segmenti" role="group">
       <button data-tp="V" aria-pressed="${tipo === 'V'}">Cliente</button><button data-tp="A" aria-pressed="${tipo === 'A'}">Fornitore</button>
     </div>
-    ${campo('Nome', `<input id="f-nome" list="l-nomi" autocomplete="off" autocapitalize="words" autofocus><datalist id="l-nomi"></datalist>`)}
+    ${campo('Nome', `<input id="f-nome" autocomplete="off" autocapitalize="words" autofocus>`)}
     ${campo('Data', `<input id="f-data" type="date" value="${oggiIso()}">`)}
     ${campo('Numero catalogo', '<input id="f-cat" inputmode="numeric" autocomplete="off">')}
     ${campo('Note', '<textarea id="f-note"></textarea>')}
     <div class="barra"><button class="btn sec" data-chiudi>Annulla</button><button class="btn" id="crea">Crea ordine</button></div>`);
-  const dl = radice.querySelector('#l-nomi');
-  const aggiorna = () => { dl.innerHTML = nomi(tipo === 'A' ? 'F' : 'C'); };
-  aggiorna();
+  comboContatto(radice.querySelector('#f-nome'), () => (tipo === 'A' ? 'F' : 'C'));
   radice.querySelectorAll('[data-tp]').forEach((b) => {
     b.onclick = () => {
       tipo = b.dataset.tp;
       radice.querySelectorAll('[data-tp]').forEach((x) => x.setAttribute('aria-pressed', x === b));
-      aggiorna();
+      radice.querySelector('#f-nome').focus();
     };
   });
-  radice.querySelector('#crea').onclick = () => {
+  radice.querySelector('#crea').onclick = async () => {
     try {
+      const nome = await chiediContatto(radice.querySelector('#f-nome').value, tipo === 'A' ? 'F' : 'C');
+      if (nome === null) return;
       const id = creaOrdine(db, {
-        tipo, contatto: radice.querySelector('#f-nome').value, data: radice.querySelector('#f-data').value,
+        tipo, contatto: nome, data: radice.querySelector('#f-data').value,
         catalogo: radice.querySelector('#f-cat').value, note: radice.querySelector('#f-note').value,
       });
       modificato();

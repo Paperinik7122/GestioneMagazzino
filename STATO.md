@@ -9,6 +9,7 @@ App PWA "Gestione Magazzino" (sostituisce l'app B4A). SQLite nel browser (sql.js
 - Pezzo 1 — guscio PWA (`src/app/`): router a `#/…`, barra in basso, foglio dal basso, toast, service worker con avviso di aggiornamento; viste Home, elenco Ordini (filtri, ricerca, nuovo ordine), Contatti (modifica, unisci, elimina). Build: `npm run build` → `dist/`. Provato su telefono e iPad (Chromium).
 - Pezzo 2 — schermata ordine (`src/app/viste/ordine.js`): ordine cliente (aggiungi/togli prodotti, collegamento manuale con stesso codice e simili in un'unica schermata, scollega, consegna) e ordine fornitore (ricezione con quantità parziale, prodotto in più/omaggio, autocompila con proposte da confermare, chiusura ricezione con stralcio dei mancanti); modifica ed eliminazione ordine. Flusso completo provato nel browser.
 - `docs/` = build pronta da usare con Python (`python3 -m http.server 8000 --directory docs`); rigenerare con `npm run build:docs` a ogni pezzo.
+- Suggerimenti sui campi (`src/app/combo.js`, `campi.js`, `src/domain/` nelle funzioni `cercaContatti`, `contattiSimili`, `cercaCodici`): nome cliente/fornitore e codice/nome prodotto si suggeriscono mentre si scrive, ignorando maiuscole, accenti, punteggiatura e spazi; scelto un prodotto si compilano codice, nome e ultimo prezzo. Nomi uguali a meno di spazi/punteggiatura = stesso contatto/codice; se un nome nuovo somiglia a uno esistente l'app chiede "Intendevi…?".
 
 ## Da fare (un pezzo alla volta)
 3. Magazzino, dettaglio codice, nuovo prodotto, Posizioni
