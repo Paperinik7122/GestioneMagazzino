@@ -23,3 +23,23 @@ export function unisciContatti(db, tieniId, eliminaId) {
   run(db, 'UPDATE ordini SET contatto_id = ? WHERE contatto_id = ?', [tieniId, eliminaId]);
   run(db, 'DELETE FROM contatti WHERE id = ?', [eliminaId]);
 }
+
+/** Modifica anagrafica di un contatto (il nome resta unico, senza badare alle maiuscole). */
+export function salvaContatto(db, id, { nome, tipo, telefono = '', indirizzo = '', email = '', note = '' }) {
+  const c = get(db, 'SELECT * FROM contatti WHERE id = ?', [id]);
+  richiedi(c, 'Contatto non trovato.');
+  const n = norm(nome);
+  richiedi(n, 'Scrivi il nome del contatto.');
+  richiedi(tipo === 'C' || tipo === 'F', 'Scegli se è un cliente o un fornitore.');
+  const doppio = get(db, 'SELECT id FROM contatti WHERE nome = ? COLLATE NOCASE AND id <> ?', [n, id]);
+  richiedi(!doppio, 'Esiste già un contatto con questo nome: usa “Unisci” se sono la stessa persona.');
+  run(db, 'UPDATE contatti SET nome = ?, tipo = ?, telefono = ?, indirizzo = ?, email = ?, note = ? WHERE id = ?',
+    [n, tipo, norm(telefono), norm(indirizzo), norm(email), norm(note), id]);
+}
+
+/** Si può eliminare solo un contatto senza ordini. */
+export function eliminaContatto(db, id) {
+  const n = get(db, 'SELECT COUNT(*) AS n FROM ordini WHERE contatto_id = ?', [id]).n;
+  richiedi(n === 0, `Il contatto ha ${n} ordini: non si può eliminare (puoi unirlo a un altro).`);
+  run(db, 'DELETE FROM contatti WHERE id = ?', [id]);
+}

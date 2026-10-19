@@ -7,6 +7,9 @@ export const euro = (n) => (n === null || n === undefined || n === ''
   ? '—'
   : `${Number(n).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`);
 
+/** "1 prodotto" / "2 prodotti" */
+export const num = (n, uno, molti) => `${n} ${n === 1 ? uno : molti}`;
+
 /** "2026-01-13" -> "13.01.2026" */
 export const dataIt = (iso) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
