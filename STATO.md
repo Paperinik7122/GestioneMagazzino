@@ -12,13 +12,13 @@ App PWA "Gestione Magazzino" (sostituisce l'app B4A). SQLite nel browser (sql.js
 - Suggerimenti sui campi (`src/app/combo.js`, `campi.js`, `src/domain/` nelle funzioni `cercaContatti`, `contattiSimili`, `cercaCodici`): nome cliente/fornitore e codice/nome prodotto si suggeriscono mentre si scrive, ignorando maiuscole, accenti, punteggiatura e spazi; scelto un prodotto si compilano codice, nome e ultimo prezzo. Nomi uguali a meno di spazi/punteggiatura = stesso contatto/codice; se un nome nuovo somiglia a uno esistente l'app chiede "Intendevi…?".
 - Suggerimenti anche nella sezione Contatti: ricerca nell'elenco per parole in qualsiasi ordine (anche per telefono), nuovo contatto che mostra quelli già esistenti, rinomina che chiede "È la stessa persona?" se il nome somiglia a un altro, Unisci con ricerca invece del menu a tendina.
 
+- Pezzo 3 — Magazzino (`src/app/viste/magazzino.js`, `codice.js`, `prodotto.js`, `posizioni.js`): elenco per codice con ricerca per parole e filtro per posizione (anche “Da collocare” dalla Home); dettaglio codice con ogni prodotto (posizione, data, prezzo, libero/assegnato a un ordine); selezione multipla per spostare in una posizione o segnare l’uscita (usato/perso/regalato/buttato); nuovo prodotto con suggerimenti codice/nome; modifica ed eliminazione del singolo prodotto; pannello Posizioni (aggiungi, rinomina, unisci, elimina; nomi uguali a meno di spazi/punteggiatura rifiutati). Provato nel browser.
+
 ## Da fare (un pezzo alla volta)
-3. Magazzino, dettaglio codice, nuovo prodotto, Posizioni
 4. Backup, ripristino, import vecchio DB con report
 5. Pubblicazione su GitHub Pages
 
 ## Note
-- Provvisorio da sostituire: `magazzinoProvvisorio` (pezzo 3) in `src/app/viste/segnaposto.js`.
 - Il test di dominio/migrazione richiede la fixture; `test/contatti.test.js` no.
 - Il DB reale (`*.db`) NON è nel repository (dati personali). Per i test serve `fixtures/old_17gen26.db`.
 - Regole di business: vedi README e la nota del progetto Claude.

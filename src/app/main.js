@@ -7,7 +7,9 @@ import { home } from './viste/home.js';
 import { ordini } from './viste/ordini.js';
 import { ordine } from './viste/ordine.js';
 import { contatti } from './viste/contatti.js';
-import { magazzinoProvvisorio, nonTrovata } from './viste/segnaposto.js';
+import { magazzino } from './viste/magazzino.js';
+import { codice } from './viste/codice.js';
+import { nonTrovata } from './viste/segnaposto.js';
 
 const SEZIONI = [
   ['home', '#/', 'home', 'Home'],
@@ -20,7 +22,8 @@ const ROTTE = {
   '': ['home', home],
   ordini: ['ordini', ordini],
   ordine: ['ordini', ordine],
-  magazzino: ['magazzino', magazzinoProvvisorio],
+  magazzino: ['magazzino', magazzino],
+  codice: ['magazzino', codice],
   contatti: ['contatti', contatti],
 };
 

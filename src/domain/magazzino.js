@@ -1,13 +1,11 @@
 // Prodotti in magazzino: elenco, dettaglio, inserimento (inventario), uscite.
 import { all, get, run, scalar, transaction } from '../db/util.js';
-import { norm } from '../db/normalizza.js';
+import { norm, parole, compatta } from '../db/normalizza.js';
 import { MOTIVI_ENTRATA, MOTIVI_USCITA } from '../db/schema.js';
 import { ErroreDominio, richiedi } from './errori.js';
 import { assicuraCodice } from './codici.js';
 import { idDaCollocare } from './posizioni.js';
 import { leggiPrezzo } from './numeri.js';
-
-const escLike = (s) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 /**
  * Elenco raggruppato per codice, solo prodotti ancora in magazzino.
@@ -16,21 +14,28 @@ const escLike = (s) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 export function elencoMagazzino(db, { testo = '', posizioneId = null } = {}) {
   const params = [];
   let where = 'm.in_magazzino = 1';
-  const t = norm(testo);
-  if (t) {
-    where += " AND (m.nome LIKE ? ESCAPE '\\' OR m.codice LIKE ? ESCAPE '\\')";
-    params.push(`%${escLike(t)}%`, `%${escLike(t)}%`);
-  }
   if (posizioneId === 'da_collocare') where += ' AND p.speciale = 1';
   else if (posizioneId) { where += ' AND m.posizione_id = ?'; params.push(posizioneId); }
-  return all(db, `
+  let righe = all(db, `
     SELECT m.codice, MAX(m.nome) AS nome, COUNT(*) AS quantita,
            GROUP_CONCAT(DISTINCT p.nome) AS posizioni,
-           SUM(CASE WHEN p.speciale = 1 THEN 1 ELSE 0 END) AS da_collocare
+           SUM(CASE WHEN p.speciale = 1 THEN 1 ELSE 0 END) AS da_collocare,
+           SUM(EXISTS(SELECT 1 FROM righe_ordine r JOIN ordini o ON o.id = r.ordine_id
+                      WHERE r.magazzino_id = m.id AND o.evaso = 0)) AS impegnati
     FROM magazzino m LEFT JOIN posizioni p ON p.id = m.posizione_id
     WHERE ${where}
     GROUP BY m.codice
     ORDER BY nome COLLATE NOCASE`, params);
+  // ricerca per parole in qualsiasi ordine (senza badare ad accenti e punteggiatura) nel nome, oppure cifre del codice
+  const w = parole(testo);
+  if (w.length) {
+    const k = compatta(testo);
+    righe = righe.filter((r) => {
+      const wn = parole(r.nome);
+      return compatta(r.codice).includes(k) || w.every((x) => wn.some((y) => y.includes(x)));
+    });
+  }
+  return righe;
 }
 
 export function riepilogoMagazzino(db) {
