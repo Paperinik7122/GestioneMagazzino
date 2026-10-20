@@ -14,11 +14,12 @@ App PWA "Gestione Magazzino" (sostituisce l'app B4A). SQLite nel browser (sql.js
 
 - Pezzo 3 — Magazzino (`src/app/viste/magazzino.js`, `codice.js`, `prodotto.js`, `posizioni.js`): elenco per codice con ricerca per parole e filtro per posizione (anche “Da collocare” dalla Home); dettaglio codice con ogni prodotto (posizione, data, prezzo, libero/assegnato a un ordine); selezione multipla per spostare in una posizione o segnare l’uscita (usato/perso/regalato/buttato); nuovo prodotto con suggerimenti codice/nome; modifica ed eliminazione del singolo prodotto; pannello Posizioni (aggiungi, rinomina, unisci, elimina; nomi uguali a meno di spazi/punteggiatura rifiutati). Provato nel browser.
 
+- Pezzo 4 — Impostazioni (`src/app/viste/impostazioni.js`, `src/db/backup.js`; raggiungibile dall'ingranaggio in Home e dall'avviso "backup"): stato dei dati e data dell'ultimo backup; **Salva backup** (foglio di condivisione sul telefono/iPad → "Salva su File", altrimenti scarica `magazzino-AAAA-MM-GG-HHMM.db`; la data conta solo se il salvataggio è andato a buon fine); **Scegli un file…** riconosce da solo il tipo: backup di questa app (mostra ordini/prodotti/contatti e data del backup prima di sostituire) oppure vecchio DB B4A (mostra il **report** della migrazione: conteggi, anomalie con esempi, nomi contatto simili da controllare; il file originale non si tocca); file non riconosciuti → messaggio chiaro. Ogni sostituzione conserva i dati di prima: **Torna ai dati di prima** li recupera (e scambia). Il report dell'ultimo import resta nel DB e si rilegge da **Rivedi il report**. Test: `test/backup.test.js` (non richiede la fixture). Provato nel browser: backup, import, file rotto, ripristino, annulla.
+
 ## Da fare (un pezzo alla volta)
-4. Backup, ripristino, import vecchio DB con report
 5. Pubblicazione su GitHub Pages
 
 ## Note
-- Il test di dominio/migrazione richiede la fixture; `test/contatti.test.js` no.
+- Il test di dominio/migrazione richiede la fixture; `test/contatti.test.js` e `test/backup.test.js` no.
 - Il DB reale (`*.db`) NON è nel repository (dati personali). Per i test serve `fixtures/old_17gen26.db`.
 - Regole di business: vedi README e la nota del progetto Claude.

@@ -239,3 +239,17 @@ h1, h2, h3, p { margin: 0; }
 .barra-sel { position: fixed; left: 0; right: 0; bottom: calc(var(--tab-h) + var(--safe-b)); z-index: 9; margin: 0 auto; max-width: 760px; display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #fff; border-top: 1px solid var(--line); box-shadow: 0 -4px 14px rgba(28, 34, 51, .08); }
 .barra-sel span { flex: 1; font-size: .92rem; }
 .campo select { appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center; padding-right: 38px; }
+
+/* ---------- impostazioni, backup, report import ---------- */
+.card + .card { margin-top: 12px; }
+.titolo-card { font-size: 1.02rem; font-weight: 800; margin-bottom: 8px; }
+.riga-info { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: .94rem; }
+.riga-info:last-of-type { border-bottom: 0; }
+.riga-info b { font-variant-numeric: tabular-nums; text-align: right; }
+.card .btn + .btn { margin-top: 10px; }
+.avviso.ok { background: var(--verde-bg); color: var(--verde); }
+a.avviso:active { filter: brightness(.96); }
+.nota-rep { margin: 10px 2px 0; color: var(--muted); }
+.anom { margin-bottom: 8px; padding: 10px 14px; border-radius: 14px; background: var(--ambra-bg); color: var(--ambra); font-size: .88rem; font-weight: 600; }
+.anom summary { cursor: pointer; }
+.anom ul { margin: 8px 0 0; padding-left: 20px; color: var(--ink); font-weight: 500; }

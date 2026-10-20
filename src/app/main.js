@@ -9,6 +9,7 @@ import { ordine } from './viste/ordine.js';
 import { contatti } from './viste/contatti.js';
 import { magazzino } from './viste/magazzino.js';
 import { codice } from './viste/codice.js';
+import { impostazioni } from './viste/impostazioni.js';
 import { nonTrovata } from './viste/segnaposto.js';
 
 const SEZIONI = [
@@ -25,6 +26,7 @@ const ROTTE = {
   magazzino: ['magazzino', magazzino],
   codice: ['magazzino', codice],
   contatti: ['contatti', contatti],
+  impostazioni: ['home', impostazioni],
 };
 
 function barra(attiva) {

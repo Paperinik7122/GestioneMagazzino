@@ -1,7 +1,7 @@
 import { getDb, meta } from '../../store.js';
 import { elencoOrdini } from '../../domain/ordini.js';
 import { riepilogoMagazzino } from '../../domain/magazzino.js';
-import { icona, esc, num } from '../../ui/kit.js';
+import { icona, esc, num, intestazione } from '../../ui/kit.js';
 import { oggiIso } from '../../domain/errori.js';
 import { foglioNuovoOrdine } from './ordini.js';
 
@@ -29,12 +29,12 @@ export function home(vista) {
 
   const avvisi = [];
   if (gg === null || gg > GIORNI_BACKUP) {
-    avvisi.push(['', 'warn', gg === null ? 'Non hai ancora fatto nessun backup.' : `L’ultimo backup risale a ${num(gg, 'giorno', 'giorni')} fa.`]);
+    avvisi.push(['', 'warn', gg === null ? 'Non hai ancora fatto nessun backup. Tocca per farlo.' : `L’ultimo backup risale a ${num(gg, 'giorno', 'giorni')} fa. Tocca per farne uno.`, '#/impostazioni']);
   }
   if (mag.senzaDataAcquisto) avvisi.push(['', 'calendar', `${num(mag.senzaDataAcquisto, 'prodotto', 'prodotti')} in magazzino senza data di acquisto.`]);
 
   vista.innerHTML = `
-    <header class="top"><h1>Gestione Magazzino</h1></header>
+    ${intestazione('Gestione Magazzino', { destra: `<a class="icon-btn" href="#/impostazioni" aria-label="Impostazioni e backup">${icona('gear', 24)}</a>` })}
     <p class="saluto">Ordini aperti e magazzino, in breve.</p>
     ${eroe}
     <div class="griglia">
@@ -43,7 +43,9 @@ export function home(vista) {
       <a class="tessera mg" href="#/magazzino"><span class="ic">${icona('box', 20)}</span><div class="n">${mag.prodotti}</div><div class="et">Prodotti</div><div class="sub">${num(mag.codici, 'codice', 'codici')}</div></a>
       <a class="tessera dc ${mag.daCollocare ? 'evidenza' : ''}" href="#/magazzino?f=da_collocare"><span class="ic">${icona('pin', 20)}</span><div class="n">${mag.daCollocare}</div><div class="et">Da collocare</div><div class="sub">${mag.daCollocare ? 'in attesa di posizione' : 'tutto a posto'}</div></a>
     </div>
-    ${avvisi.map(([c, ic, t]) => `<div class="avviso ${c}">${icona(ic, 20)}<span>${esc(t)}</span></div>`).join('')}
+    ${avvisi.map(([c, ic, t, href]) => (href
+      ? `<a class="avviso ${c}" href="${href}">${icona(ic, 20)}<span>${esc(t)}</span></a>`
+      : `<div class="avviso ${c}">${icona(ic, 20)}<span>${esc(t)}</span></div>`)).join('')}
     <div class="sezione"><h2>Azioni rapide</h2></div>
     <div class="azioni">
       <button class="azione" data-nuovo="V" style="border:0;font:inherit"><span class="ic">${icona('plus', 22)}</span>Ordine cliente</button>
