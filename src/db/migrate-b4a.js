@@ -5,6 +5,7 @@
 import { all, run, scalar, transaction } from './util.js';
 import { creaSchema, POSIZIONE_DA_COLLOCARE } from './schema.js';
 import { norm, chiave, chiaveEquivalenza } from './normalizza.js';
+import { piuFrequente, contattiDaOrdini, leggiRubrica } from './rubrica-b4a.js';
 
 const MOTIVI_IN = { inventario: 'Inventario', trovato: 'Trovato', regalo: 'Regalo' };
 const MOTIVI_OUT = {
@@ -30,16 +31,6 @@ export function numero(v) {
   if (t === '') return null;
   const n = Number(t);
   return Number.isFinite(n) ? n : null;
-}
-
-/** Variante più frequente di un insieme di scritture (a parità, la prima incontrata). */
-function piuFrequente(valori) {
-  const conta = new Map();
-  for (const v of valori) conta.set(v, (conta.get(v) ?? 0) + 1);
-  let best = null;
-  let bestN = -1;
-  for (const [v, n] of conta) if (n > bestN) { best = v; bestN = n; }
-  return best;
 }
 
 export function posizioneCanonica(s) {
@@ -71,35 +62,44 @@ export function migraDaB4A(oldDb, newDb) {
   transaction(newDb, () => {
     creaSchema(newDb);
 
-    // ---- Contatti: unisco solo le varianti che differiscono per maiuscole e spazi ----
-    const varianti = new Map(); // chiave -> { scritture[], tipi:Set }
-    for (const o of vOrdini) {
-      const k = chiave(o.Contatto);
-      if (!k) continue;
-      if (!varianti.has(k)) varianti.set(k, { scritture: [], tipi: new Set() });
-      const v = varianti.get(k);
-      v.scritture.push(norm(o.Contatto));
-      v.tipi.add(o.Verso === 'A' ? 'F' : 'C');
-    }
+    // ---- Contatti ----
+    // Se TabContatti (rubrica) ha dati, è lei che comanda: ogni riga è un contatto e i suoi alias sono
+    // altre scritture dello stesso contatto. I nomi degli ordini che non compaiono in rubrica vengono
+    // aggiunti come contatti (unendo solo le scritture che differiscono per maiuscole e spazi).
+    const rubrica = leggiRubrica(oldDb);
     const contattoIdPerChiave = new Map();
-    const misti = [];
-    for (const [k, v] of varianti) {
-      const nome = piuFrequente(v.scritture);
-      const tipo = v.tipi.has('C') ? 'C' : 'F';
-      if (v.tipi.size > 1) misti.push(nome);
-      const { lastId } = run(newDb, 'INSERT INTO contatti(nome, tipo) VALUES (?, ?)', [nome, tipo]);
-      contattoIdPerChiave.set(k, lastId);
+    const doppiInRubrica = [];
+    for (const r of rubrica) {
+      let id = contattoIdPerChiave.get(chiave(r.nome));
+      if (id) { doppiInRubrica.push(r.nome); } else {
+        id = run(newDb, 'INSERT INTO contatti(nome, tipo, telefono, indirizzo, email, note) VALUES (?,?,?,?,?,?)',
+          [r.nome, r.tipo, r.telefono, r.indirizzo, r.email, r.note]).lastId;
+        contattoIdPerChiave.set(chiave(r.nome), id);
+      }
+      for (const a of r.alias) if (!contattoIdPerChiave.has(chiave(a))) contattoIdPerChiave.set(chiave(a), id);
     }
-    anomalia('Contatti usati sia come cliente sia come fornitore', misti.length, misti);
+    anomalia('Nomi ripetuti nella rubrica (tenuta la prima riga)', doppiInRubrica.length, doppiInRubrica);
+
+    const daOrdini = contattiDaOrdini(vOrdini);
+    const nonInRubrica = [];
+    for (const [k, c] of daOrdini) {
+      if (contattoIdPerChiave.has(k)) continue;
+      contattoIdPerChiave.set(k, run(newDb, 'INSERT INTO contatti(nome, tipo) VALUES (?, ?)', [c.nome, c.tipo]).lastId);
+      nonInRubrica.push(c.nome);
+    }
+    if (rubrica.length) anomalia('Nomi presenti negli ordini ma non in rubrica (aggiunti come contatti)', nonInRubrica.length, nonInRubrica);
+    anomalia('Contatti usati sia come cliente sia come fornitore',
+      [...daOrdini.values()].filter((c) => c.misto).length, [...daOrdini.values()].filter((c) => c.misto).map((c) => c.nome));
     report.conteggi.contattiOriginali = new Set(vOrdini.map((o) => String(o.Contatto ?? ''))).size;
-    report.conteggi.contatti = varianti.size;
+    report.conteggi.contatti = scalar(newDb, 'SELECT COUNT(*) FROM contatti');
+    report.conteggi.contattiInRubrica = rubrica.length;
 
     // Proposte di unione: stessa prima parola (da confermare a mano dall'utente).
     const perPrima = new Map();
-    for (const [k, id] of contattoIdPerChiave) {
-      const prima = k.split(' ')[0];
+    for (const { nome } of all(newDb, 'SELECT nome FROM contatti ORDER BY id')) {
+      const prima = chiave(nome).split(' ')[0];
       if (!perPrima.has(prima)) perPrima.set(prima, []);
-      perPrima.get(prima).push(piuFrequente(varianti.get(k).scritture));
+      perPrima.get(prima).push(nome);
     }
     for (const nomi of perPrima.values()) if (nomi.length > 1) report.proposteUnioneContatti.push(nomi);
 

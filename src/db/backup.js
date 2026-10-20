@@ -73,7 +73,10 @@ export function righeReport(report) {
     .filter(([k]) => c[k] !== undefined)
     .map(([k, molti, uno]) => ({ n: c[k], testo: c[k] === 1 ? uno : molti }));
   const extra = [];
-  if (c.contattiOriginali > c.contatti) {
+  if (c.contattiInRubrica > 0) {
+    extra.push(`${c.contattiInRubrica} contatti letti dalla rubrica (con telefono, note e alias).`);
+  }
+  if (!c.contattiInRubrica && c.contattiOriginali > c.contatti) {
     extra.push(`${c.contattiOriginali} scritture di nomi contatto unite in ${c.contatti} (stesso nome a meno di maiuscole e spazi).`);
   }
   if (c.prodottiEquivalenti !== undefined && c.codici > c.prodottiEquivalenti) {

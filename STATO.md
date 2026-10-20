@@ -18,6 +18,8 @@ App PWA "Gestione Magazzino" (sostituisce l'app B4A). SQLite nel browser (sql.js
 
 - Scheda contatto (`src/app/viste/contatto.js`, `src/domain/scheda-contatto.js`): nell'elenco Contatti il nome apre la **scheda** (`#/contatto/<id>`), la **matita** a destra apre la modifica (anche dalla scheda, in alto a destra). La scheda mostra recapiti (telefono/mail/indirizzo toccabili), ordini aperti con prodotti da ordinare/pronti, totale speso (per un fornitore: totale ordinato), media per ordine, ultimi 12 mesi, ultimo ordine, ogni quanti giorni ordina, catalogo più usato, 5 prodotti più acquistati (per codice), storico ordini e pulsante "Nuovo ordine" già intestato a lui. Contano solo gli ordini chiusi. Test in `test/contatti.test.js`.
 
+- Rubrica nel vecchio DB (`src/db/rubrica-b4a.js`, `scripts/popola-contatti.mjs`): `node scripts/popola-contatti.mjs magazzino.db` crea una COPIA con `TabContatti` popolata dai nomi degli ordini (stesso nome a meno di maiuscole/spazi = un contatto) e le colonne `Tipo` (C/F), `Note`, `Alias`. Si sistema con un editor SQLite: telefono/indirizzo/email/note, e in `Alias` (separati da `|`) i nomi doppi da unire. L'import usa la rubrica se ha dati (i nomi negli ordini non in rubrica vengono aggiunti e segnalati nel report), altrimenti si comporta come prima. Non sovrascrive mai una rubrica già compilata. Test: `test/rubrica.test.js`.
+
 ## Da fare (un pezzo alla volta)
 5. Pubblicazione su GitHub Pages
 
