@@ -33,12 +33,13 @@ export function contatti(vista) {
     for (const c of righe) {
       const l = c.nome[0].toUpperCase();
       if (!t && l !== lett) { lett = l; html += `<div class="lettera">${esc(l)}</div>`; }
-      html += `<button class="contatto" data-id="${c.id}"><span class="avatar ${c.tipo}">${esc(iniziali(c.nome))}</span>
+      html += `<div class="contatto"><a class="contatto-vai" href="#/contatto/${c.id}"><span class="avatar ${c.tipo}">${esc(iniziali(c.nome))}</span>
         <span class="corpo"><div class="nome">${esc(c.nome)}</div>
-        <div class="sub">${c.tipo === 'F' ? 'Fornitore' : 'Cliente'} · ${num(c.n_ordini, 'ordine', 'ordini')}${c.telefono ? ` · ${esc(c.telefono)}` : ''}</div></span>${icona('chevron', 20)}</button>`;
+        <div class="sub">${c.tipo === 'F' ? 'Fornitore' : 'Cliente'} · ${num(c.n_ordini, 'ordine', 'ordini')}${c.telefono ? ` · ${esc(c.telefono)}` : ''}</div></span></a>
+        <button class="icon-btn" data-mod="${c.id}" aria-label="Modifica ${esc(c.nome)}">${icona('edit', 22)}</button></div>`;
     }
     lista.innerHTML = html;
-    lista.querySelectorAll('[data-id]').forEach((b) => { b.onclick = () => foglioContatto(Number(b.dataset.id), disegna); });
+    lista.querySelectorAll('[data-mod]').forEach((b) => { b.onclick = () => foglioContatto(Number(b.dataset.mod), disegna); });
   };
   disegna();
   vista.querySelector('#cerca').oninput = (e) => { filtro.testo = e.target.value; disegna(); };
@@ -79,7 +80,7 @@ function foglioNuovo(dopo) {
   };
 }
 
-function foglioContatto(id, dopo) {
+export function foglioContatto(id, dopo) {
   const db = getDb();
   const c = elencoContatti(db).find((x) => x.id === id);
   if (!c) return;

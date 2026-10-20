@@ -7,6 +7,7 @@ import { home } from './viste/home.js';
 import { ordini } from './viste/ordini.js';
 import { ordine } from './viste/ordine.js';
 import { contatti } from './viste/contatti.js';
+import { contatto } from './viste/contatto.js';
 import { magazzino } from './viste/magazzino.js';
 import { codice } from './viste/codice.js';
 import { impostazioni } from './viste/impostazioni.js';
@@ -26,6 +27,7 @@ const ROTTE = {
   magazzino: ['magazzino', magazzino],
   codice: ['magazzino', codice],
   contatti: ['contatti', contatti],
+  contatto: ['contatti', contatto],
   impostazioni: ['home', impostazioni],
 };
 

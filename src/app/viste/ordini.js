@@ -21,7 +21,7 @@ function etichette(o) {
   return out.join('');
 }
 
-function scheda(o) {
+export function schedaOrdine(o) {
   return `<a class="ordine ${o.tipo} ${o.evaso ? 'chiuso' : ''}" href="#/ordine/${o.id}">
     <div class="r1"><span class="num">#${o.id}</span><span class="chi">${esc(o.contatto)}</span><span class="tot">${euro(o.totaleCorrente)}</span></div>
     <div class="r2">${tagTipo(o.tipo)}${etichette(o)}</div>
@@ -31,6 +31,7 @@ function scheda(o) {
 
 export function ordini(vista, query) {
   if (query.get('t')) { filtro.tipo = query.get('t'); filtro.chiusi = false; }
+  if (query.has('q')) { filtro.testo = query.get('q'); filtro.chiusi = query.get('chiusi') === '1'; } // dalla scheda di un contatto
   vista.innerHTML = `${intestazione('Ordini', { destra: `<button class="icon-btn pieno" id="nuovo" aria-label="Nuovo ordine">${icona('plus', 24, 2.4)}</button>` })}
     <div class="ricerca">${icona('search', 20)}<input id="cerca" type="search" placeholder="Cerca numero, nome o catalogo" value="${esc(filtro.testo)}" autocomplete="off"></div>
     <div class="segmenti" role="group">
@@ -44,7 +45,7 @@ export function ordini(vista, query) {
     const righe = elencoOrdini(getDb(), {
       tipi: filtro.tipo === 'T' ? ['V', 'A'] : [filtro.tipo], conEvasi: filtro.chiusi, testo: filtro.testo,
     });
-    lista.innerHTML = righe.length ? righe.map(scheda).join('') : `<div class="vuoto"><span class="ic">${icona('orders', 30)}</span>
+    lista.innerHTML = righe.length ? righe.map(schedaOrdine).join('') : `<div class="vuoto"><span class="ic">${icona('orders', 30)}</span>
       <b>${filtro.testo ? 'Nessun ordine trovato' : 'Nessun ordine aperto'}</b>
       <span>${filtro.testo ? 'Prova con un altro nome o numero.' : 'Crea un nuovo ordine con il pulsante +.'}</span></div>`;
   };
@@ -62,16 +63,16 @@ export function ordini(vista, query) {
 }
 
 /** Foglio "Nuovo ordine" (cliente o fornitore). */
-export function foglioNuovoOrdine(tipoIniziale = 'V') {
+export function foglioNuovoOrdine(tipoIniziale = 'V', { contatto = '' } = {}) {
   const db = getDb();
   let tipo = tipoIniziale;
   const { chiudi, radice } = apriFoglio(`<h2>Nuovo ordine</h2>
     <div class="segmenti" role="group">
       <button data-tp="V" aria-pressed="${tipo === 'V'}">Cliente</button><button data-tp="A" aria-pressed="${tipo === 'A'}">Fornitore</button>
     </div>
-    ${campo('Nome', `<input id="f-nome" autocomplete="off" autocapitalize="words" autofocus>`)}
+    ${campo('Nome', `<input id="f-nome" value="${esc(contatto)}" autocomplete="off" autocapitalize="words" ${contatto ? '' : 'autofocus'}>`)}
     ${campo('Data', `<input id="f-data" type="date" value="${oggiIso()}">`)}
-    ${campo('Numero catalogo', '<input id="f-cat" inputmode="numeric" autocomplete="off">')}
+    ${campo('Numero catalogo', `<input id="f-cat" inputmode="numeric" autocomplete="off" ${contatto ? 'autofocus' : ''}>`)}
     ${campo('Note', '<textarea id="f-note"></textarea>')}
     <div class="barra"><button class="btn sec" data-chiudi>Annulla</button><button class="btn" id="crea">Crea ordine</button></div>`);
   comboContatto(radice.querySelector('#f-nome'), () => (tipo === 'A' ? 'F' : 'C'));

@@ -124,9 +124,10 @@ export function consegnaOrdine(db, ordineId, data) {
 }
 
 /** Elenco con i dati per le etichette ("2 pronte", "10 da ordinare", ...). */
-export function elencoOrdini(db, { tipi = ['V', 'A'], conEvasi = false, testo = '' } = {}) {
+export function elencoOrdini(db, { tipi = ['V', 'A'], conEvasi = false, testo = '', contattoId = null } = {}) {
   const cond = [`o.tipo IN (${tipi.map(() => '?').join(',')})`];
   const params = [...tipi];
+  if (contattoId !== null) { cond.push('o.contatto_id = ?'); params.push(contattoId); }
   if (!conEvasi) cond.push('o.evaso = 0');
   const t = norm(testo);
   if (t) {

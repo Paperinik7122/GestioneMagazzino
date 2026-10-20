@@ -132,7 +132,8 @@ h1, h2, h3, p { margin: 0; }
 .campo input:focus, .campo select:focus, .campo textarea:focus, .ricerca input:focus { outline: 0; border-color: var(--blu); box-shadow: 0 0 0 3px var(--blu-bg); }
 
 /* ---------- contatti ---------- */
-.contatto { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 0; border-radius: var(--raggio); background: var(--card); box-shadow: var(--ombra); text-align: left; cursor: pointer; }
+.contatto { display: flex; align-items: center; gap: 4px; width: 100%; padding: 4px 6px 4px 14px; border-radius: var(--raggio); background: var(--card); box-shadow: var(--ombra); text-align: left; }
+.contatto-vai { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 8px 0; }
 .avatar { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; font-weight: 800; font-size: .95rem; }
 .avatar.C { background: var(--blu-bg); color: var(--blu); }
 .avatar.F { background: var(--viola-bg); color: var(--viola); }
@@ -253,3 +254,20 @@ a.avviso:active { filter: brightness(.96); }
 .anom { margin-bottom: 8px; padding: 10px 14px; border-radius: 14px; background: var(--ambra-bg); color: var(--ambra); font-size: .88rem; font-weight: 600; }
 .anom summary { cursor: pointer; }
 .anom ul { margin: 8px 0 0; padding-left: 20px; color: var(--ink); font-weight: 500; }
+
+/* ---------- scheda contatto ---------- */
+.intesta-contatto { display: flex; align-items: center; gap: 14px; margin: 2px 2px 4px; }
+.avatar.grande { width: 60px; height: 60px; font-size: 1.3rem; }
+.intesta-contatto .chi { font-weight: 800; font-size: .86rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.recapiti { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.recapito { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: .92rem; color: var(--blu); min-height: 28px; }
+.recapito span { overflow: hidden; text-overflow: ellipsis; }
+.note-contatto { margin: 10px 2px 0; padding: 10px 14px; border-radius: 12px; background: var(--card); box-shadow: var(--ombra); font-size: .9rem; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat { padding: 14px; border-radius: var(--raggio); background: var(--card); box-shadow: var(--ombra); }
+.stat .n { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.stat .et { font-size: .82rem; font-weight: 700; margin-top: 3px; }
+.stat .sub { font-size: .76rem; color: var(--muted); margin-top: 2px; }
+.abitudini { margin: 10px 2px 0; }
+.riga .pos { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--grigio-bg); color: var(--grigio); font-weight: 800; font-size: .82rem; }
+.riga .prezzo { text-align: right; }
