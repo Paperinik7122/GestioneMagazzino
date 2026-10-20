@@ -21,7 +21,8 @@ App PWA "Gestione Magazzino" (sostituisce l'app B4A). SQLite nel browser (sql.js
 - Rubrica nel vecchio DB (`src/db/rubrica-b4a.js`, `scripts/popola-contatti.mjs`): `node scripts/popola-contatti.mjs magazzino.db` crea una COPIA con `TabContatti` popolata dai nomi degli ordini (stesso nome a meno di maiuscole/spazi = un contatto) e le colonne `Tipo` (C/F), `Note`, `Alias`. Si sistema con un editor SQLite: telefono/indirizzo/email/note, e in `Alias` (separati da `|`) i nomi doppi da unire. L'import usa la rubrica se ha dati (i nomi negli ordini non in rubrica vengono aggiunti e segnalati nel report), altrimenti si comporta come prima. Non sovrascrive mai una rubrica già compilata. Test: `test/rubrica.test.js`.
 
 ## Da fare (un pezzo alla volta)
-5. Pubblicazione su GitHub Pages
+5. **Uso su più dispositivi** (è il motivo per cui si è scelta la web app): DB condiviso tra telefono e iPad, con pubblicazione dell'app sul Raspberry Pi Zero 2W dell'utente (DietPi + Home Assistant già raggiungibile da fuori con HTTPS). Da decidere all'inizio: (A) DB sul Pi come unica copia, l'app lo legge/scrive tramite un piccolo servizio (più semplice, niente conflitti, serve la connessione); oppure (B) copia locale con sincronizzazione (funziona offline, ma servono gestione conflitti e traccia delle eliminazioni, che lo schema non ha ancora: ci sono `uid` e `updated_at`). Il servizio va protetto da password. GitHub Pages non basta: serve solo file statici.
+6. Statistiche (guadagno con sconto 20%), icone/stati prodotto, equivalenze tra codici.
 
 ## Note
 - Il test di dominio/migrazione richiede la fixture; `test/contatti.test.js` e `test/backup.test.js` no.
