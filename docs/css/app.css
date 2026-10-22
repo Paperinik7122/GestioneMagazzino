@@ -289,3 +289,9 @@ a.avviso:active { filter: brightness(.96); }
 .blocco-contenuto .btn + .nota { margin-top: 8px; }
 .nota { font-size: .82rem; color: var(--muted); }
 #f-codice input { text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+
+/* Report dell'unione di modifiche */
+.foglio .sotto { margin: 14px 0 6px; font-size: .9rem; }
+.elenco-unione { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 45vh; overflow: auto; }
+.elenco-unione li { padding: 10px 12px; border-radius: 12px; background: var(--bg); font-size: .88rem; line-height: 1.35; }
+.elenco-unione li.attenzione { background: var(--ambra-bg); color: var(--ambra); font-weight: 600; }

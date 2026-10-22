@@ -13,6 +13,7 @@ const IDB_NOME = 'magazzino-ordini';
 const IDB_STORE = 'file';
 const CHIAVE = 'db';
 const CHIAVE_PRECEDENTE = 'db_precedente'; // copia dei dati com'erano prima dell'ultima sostituzione
+const CHIAVE_BASE = 'db_base'; // { bytes, rev, archivio }: i dati all'ultimo allineamento col server (serve per unire le modifiche)
 
 let SQL = null;
 let db = null;
@@ -53,7 +54,7 @@ export function getDb() { return db; }
 export function getSync() { return sync; }
 
 const messaggioBlocco = () => (sync?.stato.modo === 'offline'
-  ? 'Sei offline: per ora puoi solo consultare i dati. Quando torna la connessione potrai modificarli.'
+  ? 'Questo dispositivo non si è ancora collegato al server: finché non c’è connessione puoi solo consultare i dati.'
   : 'Prima completa il collegamento con il server: per ora i dati sono solo da consultare.');
 
 export async function avvia() {
@@ -78,6 +79,8 @@ export async function avvia() {
     descrivi: (d) => ({ ...descriviDb(d), ultimaModifica: ultimaModificaDb(d) }),
     vuoto: dbVuoto,
     sostituisci: (nuovo, opzioni) => sostituisciDb(nuovo, { ...opzioni, interno: true }),
+    leggiBase: () => idbLeggi(CHIAVE_BASE),
+    salvaBase: (bytes, rev, archivio) => idbScrivi({ bytes, rev, archivio }, CHIAVE_BASE),
     blocca: (d) => bloccaScrittura(d, messaggioBlocco),
     sblocca: sbloccaScrittura,
   });
@@ -126,7 +129,7 @@ export function esportaBytes() { return db.export(); }
  * se poi il salvataggio viene annullato, annulla() rimette la data di prima.
  */
 export function preparaBackup() {
-  if (db.__bloccato) { // offline: il backup si fa lo stesso, ma non si può scrivere la data dentro il database
+  if (db.__bloccato) { // dati in sola consultazione: il backup si fa lo stesso, ma non si può scrivere la data dentro il database
     return { nome: nomeFileBackup(), bytes: db.export(), annulla: () => {} };
   }
   const prima = meta('ultimo_backup') ?? '';
@@ -171,8 +174,8 @@ export function preparaRipristino(bytes) {
  * conserva: tenere comunque i dati di prima (predefinito: solo se non erano vuoti).
  */
 export async function sostituisciDb(nuovoDb, { conserva = null, interno = false } = {}) {
-  if (!interno && sync?.solaLettura) {
-    throw new ErroreDominio('Sei offline: per sostituire i dati serve il collegamento con il server.');
+  if (!interno && sync?.attivo && sync.stato.modo !== 'ok') {
+    throw new ErroreDominio('Per sostituire tutti i dati serve il collegamento con il server: riprova quando sei online.');
   }
   const vecchio = db;
   if (conserva ?? (vecchio && !dbVuoto(vecchio))) {

@@ -2,7 +2,7 @@
 // schermata di scelta quando i dati sono diversi, e la scheda in Impostazioni.
 import { getSync } from '../store.js';
 import { icona, esc, num, campo } from '../ui/kit.js';
-import { toast, conferma } from './ui.js';
+import { toast, conferma, apriFoglio } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
 const dataOra = (iso) => {
@@ -28,11 +28,16 @@ export function avviaSyncUi({ rinfresca }) {
     if (st.aggiornamenti !== agg) {
       agg = st.aggiornamenti;
       rinfresca();
-      toast('Dati aggiornati');
+      if (st.unione && !st.unione.vista) {
+        if (st.unione.voci.length) mostraUnione(sync, st.unione);
+        else { sync.unioneLetta(); toast('Modifiche unite con quelle di un altro dispositivo'); }
+      } else toast('Dati aggiornati');
     }
   };
   sync.iscrivi(disegna);
   disegna(sync.stato);
+  // l'unione è avvenuta e l'app è stata chiusa prima di leggerne il report
+  if (sync.stato.unione && !sync.stato.unione.vista && sync.stato.unione.voci.length) mostraUnione(sync, sync.stato.unione);
 
   document.addEventListener('visibilitychange', () => { if (document.hidden) sync.pushOra(); else sync.controlla(); });
   window.addEventListener('pagehide', () => { sync.pushOra(); });
@@ -46,11 +51,32 @@ function disegnaBarra(sync, st) {
   const el = $('sync-barra');
   if (st.modo !== 'offline') { el.innerHTML = ''; return; }
   const generico = /^(Non riesco a raggiungere|Il server non risponde)/.test(st.errore ?? '');
+  const testo = sync.solaLettura
+    ? 'Sei offline: puoi solo consultare i dati.'
+    : `Sei offline: puoi continuare a lavorare${st.sporco ? '. Le modifiche sono in attesa e partiranno al ritorno della connessione.' : '; le modifiche partiranno al ritorno della connessione.'}`;
   el.innerHTML = `<div class="sync-barra">${icona('warn', 18)}
-    <span>Sei offline: puoi solo consultare i dati${st.sporco ? '. Le ultime modifiche non sono ancora sul server.' : '.'}
+    <span>${testo}
     ${st.errore && !generico ? `<small>${esc(st.errore)}</small>` : ''}</span>
     <button type="button">Riprova</button></div>`;
   el.querySelector('button').onclick = () => sync.controlla();
+}
+
+// ---------------------------------------------------------------- report dell'unione
+
+/** Foglio con ciò che è successo quando le modifiche di qui e quelle di un altro dispositivo sono state unite. */
+export function mostraUnione(sync, unione) {
+  const voci = unione.voci ?? [];
+  const attenzione = voci.filter((v) => v.tipo === 'attenzione');
+  const info = voci.filter((v) => v.tipo !== 'attenzione');
+  const lista = (v) => `<ul class="elenco-unione">${v.map((x) => `<li class="${x.tipo}">${esc(x.testo)}</li>`).join('')}</ul>`;
+  const { chiudi, radice } = apriFoglio(`<h2>Modifiche unite</h2>
+    <p class="muted">Su questo dispositivo c’erano ${num(unione.mie, 'modifica', 'modifiche')} non ancora salvate e un altro dispositivo ne aveva ${num(unione.loro, 'salvata', 'salvate')} nel frattempo.
+    ${voci.length ? 'Le ho unite; ecco cosa controllare:' : 'Le ho unite senza nessun problema.'}</p>
+    ${attenzione.length ? `<h3 class="sotto">Da controllare</h3>${lista(attenzione)}` : ''}
+    ${info.length ? `<h3 class="sotto">Per informazione</h3>${lista(info)}` : ''}
+    <div class="barra"><button class="btn" data-chiudi>Ho capito</button></div>`);
+  radice.querySelector('[data-chiudi]').addEventListener('click', chiudi);
+  sync.unioneLetta();
 }
 
 // ---------------------------------------------------------------- schermate che bloccano l'uso
@@ -144,13 +170,16 @@ export function schedaServer() {
   const sync = getSync();
   if (!sync?.attivo) return '';
   const st = sync.stato;
-  const stato = st.modo === 'ok' ? (st.sporco ? 'Collegato, salvo le ultime modifiche…' : 'Collegato') : 'Offline (solo consultazione)';
+  const stato = st.modo === 'ok' ? (st.sporco ? 'Collegato, salvo le ultime modifiche…' : 'Collegato')
+    : (sync.solaLettura ? 'Offline (solo consultazione)' : `Offline${st.sporco ? ' (modifiche in attesa)' : ''}`);
   return `<div class="card" id="card-server">
     <h2 class="titolo-card">Server di casa</h2>
     <div class="riga-info"><span>Stato</span><b>${stato}</b></div>
     <div class="riga-info"><span>Ultimo allineamento</span><b>${dataOra(st.quando) ?? 'mai'}</b></div>
-    <p class="muted piccolo" style="margin:10px 0 12px">I dati veri stanno sul Raspberry e vengono salvati lì a ogni modifica. Su questo dispositivo c’è una copia per consultarli anche senza connessione.</p>
+    ${st.unione ? `<div class="riga-info"><span>Ultima unione di modifiche</span><b>${dataOra(st.unione.quando) ?? ''}</b></div>` : ''}
+    <p class="muted piccolo" style="margin:10px 0 12px">I dati veri stanno sul Raspberry e vengono salvati lì a ogni modifica. Su questo dispositivo c’è una copia: senza connessione puoi continuare a lavorare e le modifiche si uniscono a quelle degli altri dispositivi quando torna la rete.</p>
     <button class="btn sec largo" id="srv-controlla">Controlla ora</button>
+    ${st.unione ? '<button class="btn sec largo" id="srv-unione">Rivedi l’ultima unione</button>' : ''}
     <button class="btn sec largo" id="srv-codice">Cambia codice di accesso</button>
   </div>`;
 }
@@ -162,6 +191,7 @@ export function attivaSchedaServer(vista, ridisegna) {
     toast(sync.stato.modo === 'ok' ? 'Tutto allineato' : 'Il server non risponde');
     ridisegna();
   });
+  vista.querySelector('#srv-unione')?.addEventListener('click', () => mostraUnione(sync, sync.stato.unione));
   vista.querySelector('#srv-codice')?.addEventListener('click', async () => {
     const ok = await conferma({
       titolo: 'Cambiare il codice di accesso?',

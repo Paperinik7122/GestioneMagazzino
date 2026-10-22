@@ -24,7 +24,7 @@ const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 // ---------------------------------------------------------------- logica pura
 
 test('decisione al collegamento', () => {
-  const d = (cfg, server, localeVuoto = false) => decidiConnessione({ cfg: { archivio: '', rev: 0, sporco: false, ...cfg }, server, localeVuoto });
+  const d = (cfg, server, localeVuoto = false, haBase = false) => decidiConnessione({ cfg: { archivio: '', rev: 0, sporco: false, ...cfg }, server, localeVuoto, haBase });
   const srv = (revisione, archivio = 'A') => ({ archivio, revisione });
 
   // primo collegamento
@@ -38,7 +38,9 @@ test('decisione al collegamento', () => {
   assert.equal(d(c, srv(5)).azione, 'niente');
   assert.equal(d({ ...c, sporco: true }, srv(5)).azione, 'carica');
   assert.equal(d(c, srv(7)).azione, 'scarica');
-  assert.deepEqual(d({ ...c, sporco: true }, srv(7)), { azione: 'scegli', motivo: 'modificati' });
+  assert.deepEqual(d({ ...c, sporco: true }, srv(7)), { azione: 'scegli', motivo: 'modificati' }); // senza la copia di base non si può unire
+  assert.deepEqual(d({ ...c, sporco: true }, srv(7), false, true), { azione: 'unisci' });
+  assert.equal(d(c, srv(7), false, true).azione, 'scarica'); // nessuna modifica di qui: basta prendere i dati nuovi
   assert.deepEqual(d(c, srv(3)), { azione: 'scegli', motivo: 'server-indietro' });
 
   // il server è un altro (cartella dati ricreata): come un primo collegamento
@@ -92,7 +94,7 @@ async function avviaServer() {
 /** Un telefono/iPad finto: stesso codice dell'app, ma database in memoria e memoria di configurazione finta. */
 async function dispositivo(server, { dati = false, cfg = {} } = {}) {
   const SQL = await sqlLib();
-  const stato = { db: new SQL.Database(), cfg, sostituzioni: [], giu: false, occupato: false };
+  const stato = { db: new SQL.Database(), cfg, sostituzioni: [], giu: false, occupato: false, base: null };
   creaSchema(stato.db);
   if (dati) run(stato.db, "INSERT INTO contatti(nome, tipo) VALUES ('Già qui', 'C')");
   const fetchFn = (...a) => (stato.giu ? Promise.reject(new TypeError('rete assente')) : fetch(...a));
@@ -109,6 +111,8 @@ async function dispositivo(server, { dati = false, cfg = {} } = {}) {
     descrivi: (d) => ({ ...descriviDb(d), ultimaModifica: ultimaModificaDb(d) }),
     vuoto: dbVuoto,
     sostituisci: async (nuovo, { conserva }) => { stato.sostituzioni.push({ conserva }); stato.db = nuovo; },
+    leggiBase: async () => stato.base,
+    salvaBase: async (bytes, rev, archivio) => { stato.base = { bytes, rev, archivio }; },
     blocca: (d) => bloccaScrittura(d, 'offline'),
     sblocca: sbloccaScrittura,
   });
@@ -197,7 +201,55 @@ conServer('più modifiche ravvicinate partono insieme (a ogni modifica non un in
   assert.deepEqual(await a.server(), { revisione: 1, nomi: ['A', 'B', 'C'] });
 });
 
-conServer('modifica in parallelo: si sceglie quale versione tenere (e l’altra non va persa)', async (server) => {
+conServer('modifica in parallelo: le due modifiche si uniscono da sole', async (server) => {
+  const a = await dispositivo(server, { cfg: conCodice(server) });
+  const b = await dispositivo(server, { cfg: conCodice(server) });
+  await a.sync.avvia();
+  await b.sync.avvia();
+  a.aggiungi('Base');
+  await a.sync.pushOra();
+  await b.sync.controlla();
+  assert.deepEqual(b.nomi(), ['Base']);
+
+  b.aggiungi('Dall’iPad');
+  await b.sync.pushOra();
+  a.aggiungi('Dal telefono'); // il telefono non sapeva che l'iPad aveva salvato
+  await a.sync.pushOra();
+  assert.equal(a.sync.stato.modo, 'ok');
+  assert.ok(!a.sync.stato.sporco);
+  assert.deepEqual(a.nomi(), ['Base', 'Dal telefono', 'Dall’iPad']);
+  assert.deepEqual((await a.server()).nomi, ['Base', 'Dal telefono', 'Dall’iPad']);
+  assert.equal(a.sync.stato.unione.voci.length, 0);
+  assert.equal(a.sync.stato.unione.mie, 1);
+  assert.equal(a.sync.stato.unione.loro, 1);
+  assert.deepEqual(a.sostituzioni.at(-1), { conserva: true }); // i dati di prima restano recuperabili
+
+  await b.sync.controlla();
+  assert.deepEqual(b.nomi(), ['Base', 'Dal telefono', 'Dall’iPad']);
+});
+
+conServer('stesso nome creato in parallelo e id uguali: nessun dato perso, riferimenti giusti', async (server) => {
+  const a = await dispositivo(server, { cfg: conCodice(server) });
+  const b = await dispositivo(server, { cfg: conCodice(server) });
+  await a.sync.avvia();
+  await b.sync.avvia();
+  a.aggiungi('Uno');
+  await a.sync.pushOra();
+  await b.sync.controlla();
+  // stesso numero interno (id 2) su entrambi, nomi diversi; e un contatto con lo stesso nome
+  a.aggiungi('Solo A');
+  a.aggiungi('Comune');
+  b.aggiungi('Solo B');
+  b.aggiungi('comune ');
+  await b.sync.pushOra();
+  await a.sync.pushOra();
+  assert.equal(a.sync.stato.modo, 'ok');
+  assert.deepEqual(a.nomi().map((n) => n.trim().toLowerCase()), ['comune', 'solo a', 'solo b', 'uno']); // resta la scrittura già sul server
+  assert.ok(a.sync.stato.unione.voci.some((v) => /stesso nome/.test(v.testo)));
+  assert.equal(all(a.db, 'SELECT COUNT(DISTINCT id) AS n FROM contatti')[0].n, 4);
+});
+
+conServer('modifica in parallelo senza la copia di base: si sceglie quale versione tenere (e l’altra non va persa)', async (server) => {
   const a = await dispositivo(server, { cfg: conCodice(server) });
   const b = await dispositivo(server, { cfg: conCodice(server) });
   await a.sync.avvia();
@@ -210,6 +262,7 @@ conServer('modifica in parallelo: si sceglie quale versione tenere (e l’altra 
   // l'iPad salva per primo; il telefono, che non lo sapeva, ha una sua modifica
   b.aggiungi('Dall’iPad');
   await b.sync.pushOra();
+  a.base = null; // per esempio i dati del sito cancellati solo in parte
   a.aggiungi('Dal telefono');
   await a.sync.pushOra();
   assert.equal(a.sync.stato.modo, 'scelta');
@@ -229,6 +282,7 @@ conServer('modifica in parallelo: si sceglie quale versione tenere (e l’altra 
   // stessa situazione, ma stavolta vince il dispositivo
   b.aggiungi('Ancora iPad');
   await b.sync.pushOra();
+  a.base = null;
   a.aggiungi('Ancora telefono');
   await a.sync.pushOra();
   assert.equal(a.sync.stato.modo, 'scelta');
@@ -263,7 +317,7 @@ conServer('primo collegamento con server vuoto: i dati di questo dispositivo van
   assert.deepEqual(await d.server(), { revisione: 1, nomi: ['Già qui'] });
 });
 
-conServer('offline: sola lettura, le modifiche non perse arrivano al ritorno della rete', async (server) => {
+conServer('offline: si continua a lavorare, le modifiche arrivano al ritorno della rete', async (server) => {
   const d = await dispositivo(server, { cfg: conCodice(server) });
   await d.sync.avvia();
   d.aggiungi('Uno');
@@ -274,26 +328,93 @@ conServer('offline: sola lettura, le modifiche non perse arrivano al ritorno del
   await d.sync.pushOra();
   assert.equal(d.sync.stato.modo, 'offline');
   assert.ok(d.sync.stato.sporco);
-  assert.throws(() => run(d.db, "DELETE FROM contatti"), ErroreDominio); // niente nuove modifiche
-  assert.deepEqual(d.nomi(), ['Due', 'Uno']); // ma i dati si leggono
+  assert.equal(d.sync.solaLettura, false); // già allineato una volta: si può modificare
+  d.aggiungi('Tre'); // modifica fatta offline
+  d.aggiungi('Quattro');
+  assert.deepEqual(d.nomi(), ['Due', 'Quattro', 'Tre', 'Uno']);
 
   await d.sync.controlla(); // ancora giù
   assert.equal(d.sync.stato.modo, 'offline');
+  assert.ok(d.sync.stato.sporco);
 
   d.giu = false;
   await d.sync.controlla();
   assert.equal(d.sync.stato.modo, 'ok');
   assert.ok(!d.sync.stato.sporco);
-  assert.deepEqual((await d.server()).nomi, ['Due', 'Uno']);
-  run(d.db, "INSERT INTO contatti(nome, tipo) VALUES ('Tre', 'C')"); // di nuovo scrivibile
+  assert.deepEqual((await d.server()).nomi, ['Due', 'Quattro', 'Tre', 'Uno']);
 });
 
-conServer('avvio senza rete dopo che il server era già noto: si apre in sola lettura', async (server) => {
+conServer('due dispositivi modificano offline e poi tornano online: tutto si unisce', async (server) => {
+  const a = await dispositivo(server, { cfg: conCodice(server) });
+  const b = await dispositivo(server, { cfg: conCodice(server) });
+  await a.sync.avvia();
+  await b.sync.avvia();
+  a.aggiungi('Base');
+  await a.sync.pushOra();
+  await b.sync.controlla();
+
+  a.giu = true;
+  b.giu = true;
+  a.aggiungi('Telefono 1');
+  b.aggiungi('iPad 1');
+  await a.sync.controlla();
+  await b.sync.controlla();
+  assert.equal(a.sync.stato.modo, 'offline');
+  a.aggiungi('Telefono 2');
+  b.aggiungi('iPad 2');
+
+  a.giu = false; // torna prima il telefono
+  await a.sync.controlla();
+  assert.equal(a.sync.stato.modo, 'ok');
+  assert.ok(!a.sync.stato.sporco);
+  assert.deepEqual((await a.server()).nomi, ['Base', 'Telefono 1', 'Telefono 2']);
+
+  b.giu = false; // poi l'iPad: il server ha già le modifiche del telefono
+  await b.sync.controlla();
+  assert.equal(b.sync.stato.modo, 'ok');
+  assert.ok(!b.sync.stato.sporco);
+  assert.deepEqual(b.nomi(), ['Base', 'iPad 1', 'iPad 2', 'Telefono 1', 'Telefono 2']);
+  assert.deepEqual((await b.server()).nomi, ['Base', 'iPad 1', 'iPad 2', 'Telefono 1', 'Telefono 2']);
+
+  await a.sync.controlla();
+  assert.deepEqual(a.nomi(), ['Base', 'iPad 1', 'iPad 2', 'Telefono 1', 'Telefono 2']);
+});
+
+conServer('l’unione non parte mentre l’utente sta scrivendo: le modifiche aspettano', async (server) => {
+  const a = await dispositivo(server, { cfg: conCodice(server) });
+  const b = await dispositivo(server, { cfg: conCodice(server) });
+  await a.sync.avvia();
+  await b.sync.avvia();
+  b.aggiungi('Dall’iPad');
+  await b.sync.pushOra();
+  a.occupato = true;
+  a.aggiungi('Dal telefono');
+  await a.sync.pushOra(); // il server rifiuta (è cambiato): ma l'utente sta scrivendo
+  assert.deepEqual(a.nomi(), ['Dal telefono']);
+  assert.ok(a.sync.stato.sporco);
+  a.occupato = false;
+  await a.sync.controlla();
+  assert.deepEqual(a.nomi(), ['Dal telefono', 'Dall’iPad']);
+  assert.deepEqual((await a.server()).nomi, ['Dal telefono', 'Dall’iPad']);
+});
+
+conServer('avvio senza rete dopo che il server era già noto: si apre e si può modificare', async (server) => {
   const d = await dispositivo(server, { cfg: conCodice(server, { archivio: 'X', rev: 3 }) });
   d.giu = true;
   await d.sync.avvia();
   assert.equal(d.sync.stato.modo, 'offline');
+  assert.equal(d.sync.solaLettura, false);
+  d.aggiungi('Offline');
+  assert.ok(d.sync.stato.sporco);
+});
+
+conServer('mai allineato e offline: sola lettura (non si hanno dati sicuri da cui partire)', async (server) => {
+  const d = await dispositivo(server, { cfg: conCodice(server) });
+  d.giu = true;
+  await d.sync.avvia();
+  assert.equal(d.sync.stato.modo, 'offline');
   assert.equal(d.sync.solaLettura, true);
+  assert.throws(() => run(d.db, "DELETE FROM contatti"), ErroreDominio);
 });
 
 conServer('codice cambiato sul server: si richiede il nuovo, i dati locali non si toccano', async (server) => {

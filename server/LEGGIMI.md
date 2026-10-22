@@ -1,8 +1,9 @@
-# Gestione Magazzino sul Raspberry (tappa 1)
+# Gestione Magazzino sul Raspberry
 
 I dati veri stanno sul Raspberry; telefono, iPad e computer li leggono e li salvano lì.
-Ogni dispositivo tiene anche una copia, così **senza connessione i dati si consultano** (ma non si modificano:
-la modifica offline è la tappa 2).
+Ogni dispositivo tiene anche una copia, così **senza connessione si può continuare a lavorare**: le modifiche restano
+in attesa e, quando torna la rete, si **uniscono riga per riga** a quelle fatte nel frattempo dagli altri dispositivi
+(vedi "Come funziona ogni giorno"). L'unione la fa l'app: il servizio sul Raspberry non cambia.
 
 Il servizio è un solo file Python (`magazzino_server.py`), senza nulla da installare con pip, e serve anche l'app
 (la cartella `docs/`). Davanti c'è lo stesso NGINX di Home Assistant: nessuna nuova porta aperta verso Internet.
@@ -79,11 +80,19 @@ nello storico, sul dispositivo da Impostazioni → “Torna ai dati di prima”)
 
 ## 6. Come funziona ogni giorno
 
-- Ogni modifica parte verso il server dopo ~1 secondo. Se due dispositivi modificano insieme, il secondo che salva
-  non sovrascrive: l'app mostra la scelta (non si perde mai nulla in silenzio).
+- Ogni modifica parte verso il server dopo ~1 secondo. Se un altro dispositivo aveva già salvato, il server rifiuta
+  il salvataggio e l'app **unisce** le due versioni: righe diverse si sommano, campi diversi della stessa riga si
+  sommano, lo stesso campo cambiato in due modi vince il più recente. Se c'è qualcosa da controllare (due ordini
+  con lo stesso numero, un prodotto assegnato a due ordini, un contatto creato due volte con lo stesso nome…)
+  compare un foglio **“Modifiche unite”** che lo spiega; si rilegge da Impostazioni → Server di casa.
+  I dati di prima dell'unione restano recuperabili (Impostazioni → “Torna ai dati di prima”) e il server ha lo storico.
+- Se l'app non ha una copia dell'ultimo allineamento (primo avvio dopo l'aggiornamento con modifiche già in sospeso,
+  dati del sito cancellati) non può unire in modo sicuro: chiede quale versione tenere, come nella tappa 1.
 - Quando torni sull'app, o ogni ~25 secondi, controlla se un altro dispositivo ha salvato e si aggiorna da sola
   (non lo fa mentre stai scrivendo o hai un foglio aperto).
-- **Offline** compare l'avviso “puoi solo consultare i dati”; quando torna la rete l'app si ricollega da sola.
+- **Offline** compare l'avviso “puoi continuare a lavorare”: le modifiche si salvano sul dispositivo e partono da sole
+  quando torna la rete (non serve fare nulla). Solo un dispositivo **mai collegato** al server resta in sola consultazione.
+  Import e ripristino di un intero database richiedono invece la connessione.
 
 ## 7. Backup e ripristino sul Raspberry
 
