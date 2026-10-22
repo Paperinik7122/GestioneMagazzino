@@ -1,8 +1,9 @@
 // Impostazioni: stato dei dati, backup, ripristino e import del vecchio database.
 import {
   getDb, meta, stato, preparaBackup, backupFatto, riconosciFile, preparaImportVecchio, preparaRipristino,
-  sostituisciDb, esistonoDatiPrecedenti, tornaAiDatiPrecedenti,
+  sostituisciDb, esistonoDatiPrecedenti, tornaAiDatiPrecedenti, getSync,
 } from '../../store.js';
+import { schedaServer, attivaSchedaServer } from '../sync-ui.js';
 import { descriviDb, dbVuoto, righeReport, leggiReport } from '../../db/backup.js';
 import { icona, esc, num, intestazione } from '../../ui/kit.js';
 import { apriFoglio, toast, conferma } from '../ui.js';
@@ -39,8 +40,11 @@ export async function impostazioni(vista) {
       <div class="riga-info"><span>Contatti</span><b>${adesso.contatti}</b></div>
       <div class="riga-info"><span>Ultimo backup</span><b>${ultimo ?? 'mai'}</b></div>
       ${stato.volatile ? `<div class="avviso rosso">${icona('warn', 20)}<span>I dati non si salvano su questo dispositivo: fai subito un backup.</span></div>` : ''}
-      <p class="muted piccolo" style="margin-top:10px">I dati stanno solo su questo dispositivo${stato.persistente ? ' (protetti dalla pulizia automatica)' : ''}. Se cambi telefono o cancelli i dati del sito, si perdono: il backup serve a questo.</p>
+      <p class="muted piccolo" style="margin-top:10px">${getSync()?.attivo
+    ? 'I dati sono sul server di casa; qui c’è una copia per consultarli anche offline. Un backup ogni tanto, conservato altrove, resta una buona idea.'
+    : `I dati stanno solo su questo dispositivo${stato.persistente ? ' (protetti dalla pulizia automatica)' : ''}. Se cambi telefono o cancelli i dati del sito, si perdono: il backup serve a questo.`}</p>
     </div>
+    ${schedaServer()}
 
     <div class="card">
       <h2 class="titolo-card">Backup</h2>
@@ -58,6 +62,7 @@ export async function impostazioni(vista) {
       ${reportSalvato ? `<button class="btn sec largo" id="report">Rivedi il report dell’ultimo import</button>` : ''}
     </div>`;
 
+  attivaSchedaServer(vista, () => impostazioni(vista));
   vista.querySelector('#backup').onclick = () => salvaBackup(vista, !!puoCondividere);
   vista.querySelector('#scarica')?.addEventListener('click', () => salvaBackup(vista, false));
   const input = vista.querySelector('#file');
@@ -164,7 +169,9 @@ function proponiRipristino(bytes, nomeFile) {
   radice.querySelector('#ok').onclick = async () => {
     chiudi();
     pendente = null;
-    await sostituisciDb(d);
+    try {
+      await sostituisciDb(d);
+    } catch (e) { try { d.close(); } catch { /* ignora */ } foglioErrore(e, 'Non posso ripristinare ora'); return; }
     toast('Backup ripristinato');
     location.hash = '#/';
   };
@@ -176,7 +183,9 @@ function proponiImport(bytes) {
   foglioReport(report, {
     conferma: async () => {
       pendente = null;
-      await sostituisciDb(nuovo);
+      try {
+        await sostituisciDb(nuovo);
+      } catch (e) { try { nuovo.close(); } catch { /* ignora */ } foglioErrore(e, 'Non posso importare ora'); return; }
       toast('Import completato. Controlla i dati e fai un backup.', { ms: 6000 });
       location.hash = '#/';
     },

@@ -11,6 +11,7 @@ import { contatto } from './viste/contatto.js';
 import { magazzino } from './viste/magazzino.js';
 import { codice } from './viste/codice.js';
 import { impostazioni } from './viste/impostazioni.js';
+import { avviaSyncUi } from './sync-ui.js';
 import { nonTrovata } from './viste/segnaposto.js';
 
 const SEZIONI = [
@@ -80,6 +81,7 @@ async function avviaApp() {
   }
   window.addEventListener('hashchange', disegna);
   disegna();
+  avviaSyncUi({ rinfresca: disegna });
   if (stato.volatile) toast('Attenzione: i dati non vengono salvati su questo dispositivo', { ms: 8000 });
   registraServiceWorker();
 }

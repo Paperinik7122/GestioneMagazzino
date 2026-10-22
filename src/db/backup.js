@@ -49,6 +49,14 @@ export function descriviDb(db) {
   };
 }
 
+/** Quando è stato modificato per l'ultima volta (ISO), per riconoscere "quale è più recente". */
+export function ultimaModificaDb(db) {
+  const v = scalar(db, `SELECT MAX(m) FROM (
+    SELECT MAX(updated_at) AS m FROM ordini UNION ALL SELECT MAX(updated_at) FROM magazzino
+    UNION ALL SELECT MAX(updated_at) FROM contatti UNION ALL SELECT MAX(updated_at) FROM righe_ordine)`);
+  return v ? new Date(Number(v)).toISOString() : null;
+}
+
 /** Un database senza ordini né prodotti né contatti è "vuoto": sostituirlo non fa perdere nulla. */
 export function dbVuoto(db) {
   const d = descriviDb(db);

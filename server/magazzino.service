@@ -1,0 +1,24 @@
+# Servizio systemd di Gestione Magazzino (copiare in /etc/systemd/system/magazzino.service, vedi LEGGIMI.md)
+[Unit]
+Description=Gestione Magazzino (dati e app)
+After=network.target
+
+[Service]
+User=magazzino
+Group=magazzino
+# Cartella dei dati: il database, lo storico delle copie e il codice di accesso (solo la sua impronta)
+Environment=MAGAZZINO_DATI=/mnt/dietpi_userdata/magazzino-dati
+ExecStart=/usr/bin/python3 /opt/magazzino/repo/server/magazzino_server.py avvia --porta 8090 --statici /opt/magazzino/repo/docs
+Restart=on-failure
+RestartSec=5
+
+# Poca memoria e pochi permessi: il servizio può scrivere solo nella cartella dei dati
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/mnt/dietpi_userdata/magazzino-dati
+MemoryMax=150M
+
+[Install]
+WantedBy=multi-user.target

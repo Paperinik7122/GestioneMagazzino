@@ -11,7 +11,10 @@ python3 -m http.server 8000 --directory docs
 Non aprire `index.html` con doppio clic: serve un piccolo server.
 
 Per usarla dal telefono/iPad sulla stessa rete Wi‑Fi: `http://<IP-del-computer>:8000`
-(senza HTTPS non si può installare né usare offline: per quello serve la pubblicazione, pezzo 5).
+(senza HTTPS non si può installare né usare offline: per quello serve la pubblicazione sul Raspberry).
+
+## Su più dispositivi (Raspberry)
+Il servizio in `server/` tiene i dati veri e serve l'app; telefono e iPad li condividono. Guida: `server/LEGGIMI.md`.
 
 ## Sviluppo (serve Node)
 ```

@@ -2,7 +2,12 @@
 import { creaSchema, SCHEMA_VERSION } from './db/schema.js';
 import { migraDaB4A } from './db/migrate-b4a.js';
 import { run, scalar } from './db/util.js';
-import { riconosciFile as riconosci, controllaDbNuovo, serializzaReport, nomeFileBackup } from './db/backup.js';
+import { riconosciFile as riconosci, controllaDbNuovo, serializzaReport, nomeFileBackup, descriviDb, dbVuoto, ultimaModificaDb } from './db/backup.js';
+import { ErroreDominio } from './domain/errori.js';
+import { creaSync } from './sync/sync.js';
+import { creaRemoto } from './sync/remoto.js';
+import { creaConfig } from './sync/config.js';
+import { bloccaScrittura, sbloccaScrittura } from './sync/sola-lettura.js';
 
 const IDB_NOME = 'magazzino-ordini';
 const IDB_STORE = 'file';
@@ -12,6 +17,7 @@ const CHIAVE_PRECEDENTE = 'db_precedente'; // copia dei dati com'erano prima del
 let SQL = null;
 let db = null;
 let timer = null;
+let sync = null;
 export const stato = { volatile: false, persistente: false, ultimoSalvataggio: 0 };
 
 function apriIdb() {
@@ -43,6 +49,13 @@ async function idbScrivi(bytes, chiave = CHIAVE) {
 
 export function getDb() { return db; }
 
+/** Il collegamento con il server di casa (vedi src/sync/). Esiste dopo avvia(). */
+export function getSync() { return sync; }
+
+const messaggioBlocco = () => (sync?.stato.modo === 'offline'
+  ? 'Sei offline: per ora puoi solo consultare i dati. Quando torna la connessione potrai modificarli.'
+  : 'Prima completa il collegamento con il server: per ora i dati sono solo da consultare.');
+
 export async function avvia() {
   SQL = await globalThis.initSqlJs({ locateFile: (f) => `./${f}` });
   let bytes = null;
@@ -56,6 +69,19 @@ export async function avvia() {
     await salvaOra();
   }
   try { stato.persistente = !!(await navigator.storage?.persist?.()); } catch { /* ignora */ }
+  sync = creaSync({
+    remoto: creaRemoto(),
+    config: creaConfig(),
+    getDb: () => db,
+    esporta: () => db.export(),
+    apriBytes: preparaRipristino,
+    descrivi: (d) => ({ ...descriviDb(d), ultimaModifica: ultimaModificaDb(d) }),
+    vuoto: dbVuoto,
+    sostituisci: (nuovo, opzioni) => sostituisciDb(nuovo, { ...opzioni, interno: true }),
+    blocca: (d) => bloccaScrittura(d, messaggioBlocco),
+    sblocca: sbloccaScrittura,
+  });
+  await sync.avvia();
   return db;
 }
 
@@ -80,6 +106,7 @@ export async function salvaOra() {
 
 /** Da chiamare dopo ogni modifica: salva poco dopo, senza bloccare l'interfaccia. */
 export function modificato() {
+  sync?.modificato();
   if (timer) return;
   timer = setTimeout(salvaOra, 400);
 }
@@ -99,6 +126,9 @@ export function esportaBytes() { return db.export(); }
  * se poi il salvataggio viene annullato, annulla() rimette la data di prima.
  */
 export function preparaBackup() {
+  if (db.__bloccato) { // offline: il backup si fa lo stesso, ma non si può scrivere la data dentro il database
+    return { nome: nomeFileBackup(), bytes: db.export(), annulla: () => {} };
+  }
   const prima = meta('ultimo_backup') ?? '';
   setMeta('ultimo_backup', new Date().toISOString());
   return { nome: nomeFileBackup(), bytes: db.export(), annulla: () => setMeta('ultimo_backup', prima) };
@@ -135,13 +165,23 @@ export function preparaRipristino(bytes) {
   } catch (e) { d.close(); throw e; }
 }
 
-/** Mette al posto dei dati attuali un altro database; i dati di prima restano recuperabili una volta. */
-export async function sostituisciDb(nuovoDb) {
+/**
+ * Mette al posto dei dati attuali un altro database; i dati di prima restano recuperabili una volta.
+ * Con il server collegato, i dati nuovi vengono inviati subito (a meno che non vengano proprio dal server: interno).
+ * conserva: tenere comunque i dati di prima (predefinito: solo se non erano vuoti).
+ */
+export async function sostituisciDb(nuovoDb, { conserva = null, interno = false } = {}) {
+  if (!interno && sync?.solaLettura) {
+    throw new ErroreDominio('Sei offline: per sostituire i dati serve il collegamento con il server.');
+  }
   const vecchio = db;
-  try { await idbScrivi(vecchio.export(), CHIAVE_PRECEDENTE); } catch { /* senza copia si prosegue lo stesso */ }
+  if (conserva ?? (vecchio && !dbVuoto(vecchio))) {
+    try { await idbScrivi(vecchio.export(), CHIAVE_PRECEDENTE); } catch { /* senza copia si prosegue lo stesso */ }
+  }
   db = nuovoDb;
   await salvaOra();
   try { vecchio?.close(); } catch { /* ignora */ }
+  if (!interno) await sync?.sostituzioneFatta();
 }
 
 export async function esistonoDatiPrecedenti() {

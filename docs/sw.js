@@ -1,5 +1,5 @@
 // Service worker: l'app funziona offline. Il build sostituisce VERSIONE e FILE.
-const VERSIONE = '5f899b52ee';
+const VERSIONE = 'fee278d275';
 const FILE = ["./","./app.js","./css/app.css","./fonts/manrope-latin-400-normal.woff2","./fonts/manrope-latin-500-normal.woff2","./fonts/manrope-latin-600-normal.woff2","./fonts/manrope-latin-700-normal.woff2","./fonts/manrope-latin-800-normal.woff2","./icons/apple-touch-icon.png","./icons/favicon-32.png","./icons/icon-192.png","./icons/icon-512.png","./icons/icon-maskable-512.png","./index.html","./manifest.webmanifest","./sql-wasm.js","./sql-wasm.wasm"];
 const CACHE = `magazzino-${VERSIONE}`;
 
@@ -21,6 +21,7 @@ self.addEventListener('message', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  if (new URL(e.request.url).pathname.includes('/api/')) return; // i dati veri arrivano sempre dal server, mai dalla cache
   e.respondWith((async () => {
     const hit = await caches.match(e.request, { ignoreSearch: true });
     if (hit) return hit;
