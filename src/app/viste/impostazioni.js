@@ -202,11 +202,13 @@ function foglioReport(report, { conferma: sostituisci = null, annulla = null, qu
         ${a.esempi.length ? `<ul>${a.esempi.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>${a.n > a.esempi.length ? `<p class="muted piccolo">…e altri ${a.n - a.esempi.length}.</p>` : ''}` : ''}
       </details>`).join('')
     : `<div class="avviso ok">${icona('ok', 20)}<span>Nessuna anomalia: tutto è stato letto senza problemi.</span></div>`;
+  // Contatti che iniziano con la stessa parola: spesso sono persone diverse, quindi una sola riga chiusa (non serve per confermare).
   const proposte = r.proposte.length
-    ? `<h3 class="gruppo-tit">Nomi simili da controllare in Contatti</h3>
-       <p class="muted piccolo" style="margin-bottom:8px">Non li ho uniti io: se sono la stessa persona usa “Unisci”.</p>
-       ${r.proposte.slice(0, 12).map((g) => `<div class="prop"><div class="nome">${g.map(esc).join(' · ')}</div></div>`).join('')}
-       ${r.proposte.length > 12 ? `<p class="muted piccolo">…e altri ${r.proposte.length - 12} gruppi.</p>` : ''}`
+    ? `<details class="anom simili"><summary><b>${r.proposte.length}</b> ${r.proposte.length === 1 ? 'gruppo' : 'gruppi'} di contatti con la stessa prima parola: di solito non serve fare nulla</summary>
+        <p class="piccolo">Non li ho uniti io. Se alcuni sono la stessa persona, in Contatti usa “Unisci”.</p>
+        ${r.proposte.slice(0, 12).map((g) => `<div class="prop"><div class="nome">${g.map(esc).join(' · ')}</div></div>`).join('')}
+        ${r.proposte.length > 12 ? `<p class="muted piccolo">…e altri ${r.proposte.length - 12} gruppi.</p>` : ''}
+      </details>`
     : '';
   const { chiudi, radice } = apriFoglio(`<h2>${sostituisci ? 'Import dalla vecchia app' : 'Report dell’ultimo import'}</h2>
     <p class="muted piccolo" style="margin:-6px 0 12px">${sostituisci ? 'Ecco cosa ho letto dal file. Il file originale non viene modificato.' : `Import del ${esc(q ?? 'data non nota')}.`}</p>

@@ -469,10 +469,11 @@ CREATE INDEX idx_codici_prodotto ON codici(prodotto_id);
     ${De()}
     <div class="barra"><button class="btn sec" id="annulla">Annulla</button><button class="btn" id="ok">Ripristina</button></div>`);r.querySelector("#annulla").onclick=()=>{a(),$i()},r.querySelector("#ok").onclick=async()=>{a(),Jo=null;try{await di(t)}catch(c){try{t.close()}catch{}Zo(c,"Non posso ripristinare ora");return}A("Backup ripristinato"),location.hash="#/"}}function oa(o){let{nuovo:i,report:t}=Wt(o);Jo=i,xe(t,{conferma:async()=>{Jo=null;try{await di(i)}catch(e){try{i.close()}catch{}Zo(e,"Non posso importare ora");return}A("Import completato. Controlla i dati e fai un backup.",{ms:6e3}),location.hash="#/"},annulla:$i})}function xe(o,{conferma:i=null,annulla:t=null,quando:e=null}={}){let n=$t(o),a=e?lt(e):null,r=n.anomalie.length?n.anomalie.map(u=>`<details class="anom"><summary><b>${u.n}</b> ${p(u.testo)}</summary>
         ${u.esempi.length?`<ul>${u.esempi.map(d=>`<li>${p(d)}</li>`).join("")}</ul>${u.n>u.esempi.length?`<p class="muted piccolo">\u2026e altri ${u.n-u.esempi.length}.</p>`:""}`:""}
-      </details>`).join(""):`<div class="avviso ok">${E("ok",20)}<span>Nessuna anomalia: tutto \xE8 stato letto senza problemi.</span></div>`,c=n.proposte.length?`<h3 class="gruppo-tit">Nomi simili da controllare in Contatti</h3>
-       <p class="muted piccolo" style="margin-bottom:8px">Non li ho uniti io: se sono la stessa persona usa \u201CUnisci\u201D.</p>
-       ${n.proposte.slice(0,12).map(u=>`<div class="prop"><div class="nome">${u.map(p).join(" \xB7 ")}</div></div>`).join("")}
-       ${n.proposte.length>12?`<p class="muted piccolo">\u2026e altri ${n.proposte.length-12} gruppi.</p>`:""}`:"",{chiudi:s,radice:l}=w(`<h2>${i?"Import dalla vecchia app":"Report dell\u2019ultimo import"}</h2>
+      </details>`).join(""):`<div class="avviso ok">${E("ok",20)}<span>Nessuna anomalia: tutto \xE8 stato letto senza problemi.</span></div>`,c=n.proposte.length?`<details class="anom simili"><summary><b>${n.proposte.length}</b> ${n.proposte.length===1?"gruppo":"gruppi"} di contatti con la stessa prima parola: di solito non serve fare nulla</summary>
+        <p class="piccolo">Non li ho uniti io. Se alcuni sono la stessa persona, in Contatti usa \u201CUnisci\u201D.</p>
+        ${n.proposte.slice(0,12).map(u=>`<div class="prop"><div class="nome">${u.map(p).join(" \xB7 ")}</div></div>`).join("")}
+        ${n.proposte.length>12?`<p class="muted piccolo">\u2026e altri ${n.proposte.length-12} gruppi.</p>`:""}
+      </details>`:"",{chiudi:s,radice:l}=w(`<h2>${i?"Import dalla vecchia app":"Report dell\u2019ultimo import"}</h2>
     <p class="muted piccolo" style="margin:-6px 0 12px">${i?"Ecco cosa ho letto dal file. Il file originale non viene modificato.":`Import del ${p(a??"data non nota")}.`}</p>
     <div class="card">${n.conteggi.map(u=>`<div class="riga-info"><span>${p(u.testo)}</span><b>${u.n}</b></div>`).join("")}</div>
     ${n.extra.map(u=>`<p class="piccolo nota-rep">${p(u)}</p>`).join("")}
