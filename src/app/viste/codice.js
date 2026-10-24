@@ -1,6 +1,7 @@
 // Dettaglio di un codice: ogni prodotto in magazzino con posizione, data, prezzo; spostamenti e uscite.
 import { getDb } from '../../store.js';
 import { dettaglioCodice } from '../../domain/magazzino.js';
+import { norm } from '../../db/normalizza.js';
 import { icona, chip, esc, euro, dataIt, num, intestazione } from '../../ui/kit.js';
 import { foglioNuovoProdotto, foglioProdotto, foglioSposta, foglioUscita } from './prodotto.js';
 
@@ -23,9 +24,9 @@ export function codice(vista, _query, codiceUrl) {
     const prezzi = d.prezzoMin === null ? '' : d.prezzoMin === d.prezzoMax ? ` · acquistati a ${euro(d.prezzoMin)}` : ` · acquistati da ${euro(d.prezzoMin)} a ${euro(d.prezzoMax)}`;
     const inSel = selezione !== null;
 
-    vista.innerHTML = `${intestazione(esc(d.nome), { indietro: '#/magazzino' })}
+    vista.innerHTML = `${intestazione(esc(d.codice ? d.nome : 'Prodotti senza codice'), { indietro: '#/magazzino' })}
       <div class="riepilogo A" style="border-color:var(--verde);background:#eef7f1">
-        <div class="r1"><span class="chi">Codice ${esc(d.codice)}</span><span class="tot">${d.prodotti.length}</span></div>
+        <div class="r1"><span class="chi">${d.codice ? `Codice ${esc(d.codice)}` : 'Senza codice: aprili uno a uno per scrivere codice e nome'}</span><span class="tot">${d.prodotti.length}</span></div>
         <div class="meta">${num(d.prodotti.length, 'prodotto', 'prodotti')} in magazzino · ${liberi} ${liberi === 1 ? 'libero' : 'liberi'}${prezzi}</div>
         ${d.senzaData ? `<div class="meta">${num(d.senzaData, 'prodotto', 'prodotti')} senza data di acquisto</div>` : ''}
       </div>
@@ -37,7 +38,7 @@ export function codice(vista, _query, codiceUrl) {
         <button class="btn mini sec" id="sel-tutti">Tutti</button>
         <button class="btn mini sec" id="sel-dc">Solo da collocare</button>
         <button class="btn mini sec" id="sel-lib">Solo liberi</button></div>` : ''}
-      <div class="lista" id="lista" ${inSel ? 'style="padding-bottom:84px"' : ''}>${d.prodotti.map((p) => riga(p, inSel, selezione)).join('')}</div>
+      <div class="lista" id="lista" ${inSel ? 'style="padding-bottom:84px"' : ''}>${d.prodotti.map((p) => riga(p, inSel, selezione, !d.codice || d.prodotti.some((x) => norm(x.nome) !== norm(d.prodotti[0].nome)))).join('')}</div>
       ${inSel ? `<div class="barra-sel"><span><b>${selezione.size}</b> ${selezione.size === 1 ? 'selezionato' : 'selezionati'}</span>
         <button class="btn mini" id="sposta" ${selezione.size ? '' : 'disabled'}>Sposta in…</button>
         <button class="btn mini sec" id="uscita" ${selezione.size ? '' : 'disabled'}>Uscita…</button></div>` : ''}`;
@@ -47,7 +48,7 @@ export function codice(vista, _query, codiceUrl) {
     vista.querySelector('#seleziona').onclick = () => { selezione = inSel ? null : new Set(); disegna(); };
     if (!inSel) {
       vista.querySelectorAll('[data-id]').forEach((el) => {
-        el.onclick = (e) => { if (e.target.closest('a')) return; foglioProdotto(d.prodotti.find((p) => p.id === Number(el.dataset.id)), disegna); };
+        el.onclick = (e) => { if (e.target.closest('a')) return; foglioProdotto(d.prodotti.find((p) => p.id === Number(el.dataset.id)), () => disegna()); };
       });
       return;
     }
@@ -70,7 +71,7 @@ export function codice(vista, _query, codiceUrl) {
   disegna();
 }
 
-function riga(p, inSel, selezione) {
+function riga(p, inSel, selezione, conNome) {
   const dett = [
     p.data_acquisto ? `acquistato il ${dataIt(p.data_acquisto)}` : 'senza data di acquisto',
     p.catalogo_acquisto ? `catalogo ${esc(p.catalogo_acquisto)}` : '',
@@ -82,5 +83,5 @@ function riga(p, inSel, selezione) {
       <div class="nome">${p.da_collocare ? chip('ambra', 'Da collocare', 'pin') : chip('grigio', p.posizione ?? 'Senza posizione', 'pin')}</div>
       <span class="prezzo">${p.prezzo_acquisto === null ? '—' : euro(p.prezzo_acquisto)}</span></div>
     <div class="r2">${p.impegnato_in_ordine ? `<a href="#/ordine/${p.impegnato_in_ordine}" style="text-decoration:none">${chip('blu', `Assegnato all’ordine #${p.impegnato_in_ordine}`, 'link')}</a>` : chip('verde', 'Libero', 'ok')}</div>
-    <div class="dett">${dett}</div></div>`;
+    ${conNome ? `<div class="dett"><b>${esc(p.nome)}</b></div>` : ''}<div class="dett">${dett}</div></div>`;
 }

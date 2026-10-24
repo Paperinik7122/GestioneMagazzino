@@ -101,6 +101,16 @@ export function modificaProdotto(db, id, d) {
   const campi = [];
   const val = [];
   const imposta = (col, v) => { campi.push(`${col} = ?`); val.push(v); };
+  if ('codice' in d || 'nome' in d) {
+    const nuovoNome = norm('nome' in d ? d.nome : m.nome);
+    richiedi(nuovoNome, 'Serve il nome del prodotto.');
+    const nuovoCodice = norm('codice' in d ? d.codice : m.codice);
+    richiedi(nuovoCodice, 'Serve il codice del prodotto.');
+    // un codice nuovo viene creato (con questo nome); uno già esistente (anche scritto "25 689") viene riusato
+    const cod = assicuraCodice(db, nuovoCodice, nuovoNome);
+    imposta('codice', cod.codice);
+    imposta('nome', nuovoNome);
+  }
   if ('posizioneId' in d) {
     richiedi(get(db, 'SELECT 1 FROM posizioni WHERE id = ?', [d.posizioneId]), 'Scegli una posizione dall’elenco.');
     imposta('posizione_id', d.posizioneId);

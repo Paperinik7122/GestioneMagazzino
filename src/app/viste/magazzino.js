@@ -13,7 +13,7 @@ function scheda(r) {
   const posizioni = (r.posizioni ?? '').split(',').filter((x) => x && x !== POSIZIONE_DA_COLLOCARE);
   const altre = r.quantita - r.da_collocare;
   return `<a class="riga link" href="#/codice/${encodeURIComponent(r.codice)}">
-    <div class="r1"><div class="nome">${esc(r.nome)}<div class="cod">codice ${esc(r.codice)}</div></div>
+    <div class="r1"><div class="nome">${r.codice ? esc(r.nome) : 'Prodotti senza codice'}<div class="cod">${r.codice ? `codice ${esc(r.codice)}` : 'da sistemare: apri e scrivi codice e nome'}</div></div>
       <span class="qta" title="Prodotti in magazzino">${r.quantita}</span></div>
     <div class="r2">
       ${r.da_collocare ? chip('ambra', `${r.da_collocare} da collocare`, 'pin') : ''}

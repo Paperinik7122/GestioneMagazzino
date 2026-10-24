@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { nuovoVuoto } from './helpers.js';
 import { creaSchema } from '../src/db/schema.js';
-import { creaProdotti, elencoMagazzino, spostaProdotti, dettaglioCodice } from '../src/domain/magazzino.js';
+import { creaProdotti, elencoMagazzino, spostaProdotti, dettaglioCodice, modificaProdotto } from '../src/domain/magazzino.js';
 import { creaPosizione, rinominaPosizione, eliminaPosizione, elencoPosizioni, idDaCollocare } from '../src/domain/posizioni.js';
 
 test('magazzino: ricerca per parole senza badare ad accenti, punteggiatura e ordine; filtro posizione', async () => {
@@ -31,4 +31,20 @@ test('posizioni: nomi uguali a meno di spazi/punteggiatura sono la stessa posizi
   creaProdotti(db, { codice: '1', nome: 'X', posizioneId: b });
   assert.throws(() => eliminaPosizione(db, b), /c’è ancora 1 prodotto/);
   assert.equal(elencoPosizioni(db).length, 3);
+});
+
+test('magazzino: si può correggere codice e nome di un prodotto (anche se era senza codice)', async () => {
+  const db = await nuovoVuoto();
+  creaSchema(db);
+  creaProdotti(db, { codice: '25689', nome: 'Detersivo piatti limone' });
+  // prodotto importato dal vecchio DB senza codice
+  db.run("INSERT INTO magazzino(codice, nome, posizione_id) VALUES ('', 'Windows glove rosso', ?)", [idDaCollocare(db)]);
+  const id = dettaglioCodice(db, '').prodotti[0].id;
+  assert.throws(() => modificaProdotto(db, id, { codice: '' }), /Serve il codice/);
+  modificaProdotto(db, id, { codice: '31450', nome: 'Windows glove' });
+  assert.equal(dettaglioCodice(db, '').prodotti.length, 0);
+  assert.equal(dettaglioCodice(db, '31450').prodotti[0].nome, 'Windows glove');
+  // un codice già esistente (scritto con lo spazio) viene riusato
+  modificaProdotto(db, id, { codice: '25 689' });
+  assert.equal(dettaglioCodice(db, '25689').prodotti.length, 2);
 });

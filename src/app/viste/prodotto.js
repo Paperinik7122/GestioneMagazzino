@@ -7,6 +7,7 @@ import { MOTIVI_ENTRATA, MOTIVI_USCITA } from '../../db/schema.js';
 import { esc, num, campo, icona } from '../../ui/kit.js';
 import { apriFoglio, mostraErrore, conferma, toast } from '../ui.js';
 import { comboProdotto } from '../campi.js';
+import { norm } from '../../db/normalizza.js';
 
 const opzioniPosizioni = (db, scelta) => elencoPosizioni(db)
   .map((p) => `<option value="${p.id}" ${p.id === scelta ? 'selected' : ''}>${esc(p.nome)}</option>`).join('');
@@ -47,7 +48,9 @@ export function foglioNuovoProdotto({ codice = '', nome = '' } = {}, dopo = () =
 export function foglioProdotto(p, dopo) {
   const db = getDb();
   const { chiudi, radice } = apriFoglio(`<h2>${esc(p.nome)}</h2>
-    <p class="muted piccolo" style="margin:-8px 0 14px">Codice ${esc(p.codice)}</p>
+    <p class="muted piccolo" style="margin:-8px 0 14px">${p.codice ? `Codice ${esc(p.codice)}` : 'Prodotto senza codice: scrivilo qui sotto'}</p>
+    ${campo('Codice', `<input id="f-cod" autocomplete="off" autocapitalize="characters" value="${esc(p.codice)}" ${p.codice ? '' : 'autofocus'}>`)}
+    ${campo('Nome', `<input id="f-nome" autocomplete="off" value="${esc(p.nome)}">`)}
     ${campo('Posizione', `<select id="f-pos">${opzioniPosizioni(db, p.posizione_id)}</select>`)}
     ${campo('Data di acquisto', `<input id="f-data" type="date" value="${esc(p.data_acquisto ?? '')}">`)}
     ${campo('Prezzo di acquisto (€)', `<input id="f-prezzo" inputmode="decimal" autocomplete="off" value="${esc(p.prezzo_acquisto === null ? '' : prezzoDaCampo(p.prezzo_acquisto))}">`)}
@@ -59,11 +62,13 @@ export function foglioProdotto(p, dopo) {
   const v = (s) => radice.querySelector(s).value;
   radice.querySelector('#salva').onclick = () => {
     try {
+      const cambiato = norm(v('#f-cod')) !== norm(p.codice) || norm(v('#f-nome')) !== norm(p.nome);
       modificaProdotto(db, p.id, {
+        ...(cambiato ? { codice: v('#f-cod'), nome: v('#f-nome') } : {}),
         posizioneId: Number(v('#f-pos')), dataAcquisto: v('#f-data'), prezzoAcquisto: v('#f-prezzo'),
         catalogo: v('#f-cat'), motivoIn: v('#f-motivo') || null, note: v('#f-note'),
       });
-      modificato(); chiudi(); dopo(); toast('Prodotto salvato');
+      modificato(); chiudi(); dopo(cambiato ? v('#f-cod') : undefined); toast('Prodotto salvato');
     } catch (e) { mostraErrore(radice, e); }
   };
   radice.querySelector('#uscita').onclick = () => {
