@@ -1,6 +1,6 @@
 // Service worker: l'app funziona offline. Il build sostituisce VERSIONE e FILE.
-const VERSIONE = 'd0cdda58d2';
-const FILE = ["./","./app.js","./css/app.css","./fonts/manrope-latin-400-normal.woff2","./fonts/manrope-latin-500-normal.woff2","./fonts/manrope-latin-600-normal.woff2","./fonts/manrope-latin-700-normal.woff2","./fonts/manrope-latin-800-normal.woff2","./icons/apple-touch-icon.png","./icons/favicon-32.png","./icons/icon-192.png","./icons/icon-512.png","./icons/icon-maskable-512.png","./index.html","./manifest.webmanifest","./sql-wasm.js","./sql-wasm.wasm"];
+const VERSIONE = '5d851f7bd9';
+const FILE = ["./","./app.js","./css/app.css","./fonts/manrope-latin-400-normal.woff2","./fonts/manrope-latin-500-normal.woff2","./fonts/manrope-latin-600-normal.woff2","./fonts/manrope-latin-700-normal.woff2","./fonts/manrope-latin-800-normal.woff2","./icons/apple-touch-icon.png","./icons/favicon-32.png","./icons/icon-192.png","./icons/icon-512.png","./icons/icon-maskable-512.png","./icons/icon.svg","./index.html","./manifest.webmanifest","./sql-wasm.js","./sql-wasm.wasm"];
 const CACHE = `magazzino-${VERSIONE}`;
 
 self.addEventListener('install', (e) => {
