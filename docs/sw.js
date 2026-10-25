@@ -1,5 +1,5 @@
 // Service worker: l'app funziona offline. Il build sostituisce VERSIONE e FILE.
-const VERSIONE = '54401f2f6f';
+const VERSIONE = 'da386ede60';
 const FILE = ["./","./app.js","./css/app.css","./fonts/manrope-latin-400-normal.woff2","./fonts/manrope-latin-500-normal.woff2","./fonts/manrope-latin-600-normal.woff2","./fonts/manrope-latin-700-normal.woff2","./fonts/manrope-latin-800-normal.woff2","./icons/apple-touch-icon.png","./icons/favicon-32.png","./icons/icon-192.png","./icons/icon-512.png","./icons/icon-maskable-512.png","./icons/icon.svg","./index.html","./manifest.webmanifest","./sql-wasm.js","./sql-wasm.wasm"];
 const CACHE = `magazzino-${VERSIONE}`;
 

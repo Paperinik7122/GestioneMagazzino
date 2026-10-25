@@ -11,6 +11,7 @@ import { contatto } from './viste/contatto.js';
 import { magazzino } from './viste/magazzino.js';
 import { codice } from './viste/codice.js';
 import { impostazioni } from './viste/impostazioni.js';
+import { iniziaAscoltoInstallazione } from './installa.js';
 import { avviaSyncUi } from './sync-ui.js';
 import { nonTrovata } from './viste/segnaposto.js';
 
@@ -86,4 +87,5 @@ async function avviaApp() {
   registraServiceWorker();
 }
 
+iniziaAscoltoInstallazione(); // prima di tutto: Chrome manda l'evento di installazione presto
 avviaApp();

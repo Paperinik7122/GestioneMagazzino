@@ -8,6 +8,7 @@ import { descriviDb, dbVuoto, righeReport, leggiReport } from '../../db/backup.j
 import { icona, esc, num, intestazione } from '../../ui/kit.js';
 import { apriFoglio, toast, conferma } from '../ui.js';
 import { ErroreDominio } from '../../domain/errori.js';
+import { installa, puoInstallare, inModalitaApp, suInstallazione, diagnostica } from '../installa.js';
 
 const dataOra = (iso) => {
   const d = new Date(iso);
@@ -60,9 +61,29 @@ export async function impostazioni(vista) {
       <input type="file" id="file" hidden>
       ${haPrecedenti ? `<button class="btn sec largo" id="precedenti">Torna ai dati di prima dell’ultima sostituzione</button>` : ''}
       ${reportSalvato ? `<button class="btn sec largo" id="report">Rivedi il report dell’ultimo import</button>` : ''}
+    </div>
+
+    <div class="card">
+      <h2 class="titolo-card">Installa sul dispositivo</h2>
+      <p class="muted piccolo" style="margin-bottom:12px">${inModalitaApp() ? 'L’app è aperta a schermo intero.' : 'Installata, si apre a schermo intero come un’app vera, senza barra dell’indirizzo.'}</p>
+      ${inModalitaApp() ? '' : `<button class="btn largo" id="installa" ${puoInstallare() ? '' : 'hidden'}>${icona('download', 20)} Installa app</button>`}
+      <button class="btn sec largo" id="diagnostica">Controlla perché non si installa</button>
+      <div id="esito-diagnostica"></div>
     </div>`;
 
   attivaSchedaServer(vista, () => impostazioni(vista));
+  const tastoInstalla = vista.querySelector('#installa');
+  if (tastoInstalla) {
+    const sciogli = suInstallazione(() => { tastoInstalla.hidden = !puoInstallare(); });
+    tastoInstalla.onclick = async () => { if ((await installa()) === 'accepted') toast('Installata: la trovi tra le app'); };
+    new MutationObserver(() => { if (!vista.contains(tastoInstalla)) { sciogli(); } }).observe(vista, { childList: true });
+  }
+  vista.querySelector('#diagnostica').onclick = async () => {
+    const out = vista.querySelector('#esito-diagnostica');
+    out.innerHTML = '<p class="muted piccolo" style="margin-top:10px">Controllo…</p>';
+    const r = await diagnostica();
+    out.innerHTML = `<div style="margin-top:12px">${r.map((x) => `<div class="riga-info" style="align-items:flex-start;gap:10px"><span style="flex:1"><b>${x.ok ? '✅' : '❌'} ${esc(x.titolo)}</b>${x.dettaglio ? `<br><span class="muted piccolo" style="word-break:break-all">${esc(x.dettaglio)}</span>` : ''}</span></div>`).join('')}</div>`;
+  };
   vista.querySelector('#backup').onclick = () => salvaBackup(vista, !!puoCondividere);
   vista.querySelector('#scarica')?.addEventListener('click', () => salvaBackup(vista, false));
   const input = vista.querySelector('#file');
