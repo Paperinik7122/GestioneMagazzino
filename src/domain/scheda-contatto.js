@@ -24,7 +24,7 @@ export function schedaContatto(db, id, oggi = oggiIso()) {
 
   const speso = arrotonda(chiusi.reduce((s, o) => s + (o.totale ?? 0), 0));
   const dateChiusura = chiusi.map((o) => o.data_evasione ?? o.data_emissione).sort();
-  const ultimo = dateChiusura.at(-1) ?? null;
+  const ultimo = dateChiusura[dateChiusura.length - 1] ?? null; // niente .at(): manca su Safari/iPadOS vecchi
   const primo = dateChiusura[0] ?? null;
   const unAnnoFa = new Date(Date.parse(oggi) - 365 * 86400000).toISOString().slice(0, 10);
   const spesoUltimoAnno = arrotonda(chiusi.filter((o) => (o.data_evasione ?? o.data_emissione) >= unAnnoFa)

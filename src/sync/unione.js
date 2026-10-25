@@ -326,7 +326,7 @@ function unisciMeta(b, m, t) {
     let v;
     if (stesso(m.get(k), b.get(k))) v = t.get(k);
     else if (stesso(t.get(k), b.get(k))) v = m.get(k);
-    else if (k === 'ultimo_backup') v = [m.get(k), t.get(k)].filter(Boolean).sort().at(-1);
+    else if (k === 'ultimo_backup') v = [m.get(k), t.get(k)].filter(Boolean).sort().pop();
     else v = t.get(k);
     if (v !== undefined && v !== null) out.set(k, v);
   }
@@ -387,7 +387,7 @@ function descrivi({ eventi, merged, ids, B, M, T }) {
   const maius = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   for (const e of eventi) {
     if (e.tipo === 'conflitto') {
-      const colonna = NOMI_CAMPI[e.c] ?? e.c.replaceAll('_', ' ');
+      const colonna = NOMI_CAMPI[e.c] ?? e.c.replace(/_/g, ' ');
       let mio = valore(e.mio); let loro = valore(e.loro);
       const rif = per(e.t)?.rif[e.c];
       if (rif) {
