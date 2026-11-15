@@ -162,15 +162,17 @@ function righeFornitore(d) {
   return d.gruppi.map((g) => {
     const chiave = `${esc(g.codice)}|${g.omaggio ? 1 : 0}`;
     const completo = g.ricevute === g.quantita;
+    const parziale = g.ricevute > 0 && !completo;
     const stato = !aperto ? '' : `<div class="r2">${g.omaggio ? chip('rosa', 'In più / omaggio', 'gift') : ''}
+      ${completo ? chip('verde', 'Arrivato', 'check') : parziale ? chip('ambra', `Arrivati ${g.ricevute} su ${g.quantita}`, 'part') : ''}
       <div class="contatore">
         <button data-ric="${chiave}|${g.ricevute - 1}" ${g.ricevute <= 0 ? 'disabled' : ''} aria-label="Uno in meno">${icona('minus', 18, 2.4)}</button>
         <span class="val">${g.ricevute}/${g.quantita}</span>
         <button data-ric="${chiave}|${g.ricevute + 1}" ${completo ? 'disabled' : ''} aria-label="Uno in più">${icona('plus', 18, 2.4)}</button>
-        <button class="tutto ${completo ? 'on' : ''}" data-ric="${chiave}|${completo ? 0 : g.quantita}" aria-label="Tutti arrivati">${icona('ok', 22)}</button>
+        <button class="tutto ${completo ? 'on' : ''}" data-ric="${chiave}|${completo ? 0 : g.quantita}" aria-pressed="${completo}" aria-label="${completo ? 'Arrivato: tocca per annullare' : 'Segna tutti arrivati'}">${completo ? icona('check', 26, 3.4) : icona('empty', 26, 2)}</button>
       </div></div>`;
     const togli = aperto ? `<div class="azioni-riga"><button class="btn mini ghost" data-toglie="${g.righe.join(',')}" data-nome="${esc(g.nome)}">${icona('trash', 16)}Togli</button></div>` : '';
-    return `<div class="riga ${completo && aperto ? 'ok-ric' : ''}"><div class="r1"><div class="nome">${g.quantita > 1 ? `${g.quantita} × ` : ''}${esc(g.nome)}<div class="cod">${esc(g.codice)}</div></div>
+    return `<div class="riga ${aperto ? (completo ? 'ok-ric' : parziale ? 'parz-ric' : '') : ''}"><div class="r1"><div class="nome">${g.quantita > 1 ? `${g.quantita} × ` : ''}${esc(g.nome)}<div class="cod">${esc(g.codice)}</div></div>
       <div class="prezzo">${g.omaggio ? 'omaggio' : euro(g.prezzo * g.quantita)}</div></div>${stato}${togli}</div>`;
   }).join('');
 }
@@ -268,7 +270,7 @@ function foglioModifica(o) {
   const { chiudi, radice } = apriFoglio(`<h2>Modifica ordine #${o.id}</h2>
     ${campo('Nome', `<input id="f-nome" value="${esc(o.contatto)}" autocomplete="off" autocapitalize="words">`)}
     ${campo('Data', `<input id="f-data" type="date" value="${esc(o.data_emissione)}">`)}
-    ${campo('Numero catalogo', `<input id="f-cat" inputmode="numeric" value="${esc(o.catalogo)}" autocomplete="off">`)}
+    ${campo('Numero catalogo', `<input id="f-cat" inputmode="text" value="${esc(o.catalogo)}" autocomplete="off" autocorrect="off" autocapitalize="characters">`)}
     ${campo('Note', `<textarea id="f-note">${esc(o.note)}</textarea>`)}
     <div class="barra"><button class="btn sec" data-chiudi>Annulla</button><button class="btn" id="ok">Salva</button></div>`);
   comboContatto(radice.querySelector('#f-nome'), o.tipo === 'A' ? 'F' : 'C');

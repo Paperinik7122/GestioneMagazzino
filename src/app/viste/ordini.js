@@ -72,7 +72,7 @@ export function foglioNuovoOrdine(tipoIniziale = 'V', { contatto = '' } = {}) {
     </div>
     ${campo('Nome', `<input id="f-nome" value="${esc(contatto)}" autocomplete="off" autocapitalize="words" ${contatto ? '' : 'autofocus'}>`)}
     ${campo('Data', `<input id="f-data" type="date" value="${oggiIso()}">`)}
-    ${campo('Numero catalogo', `<input id="f-cat" inputmode="numeric" autocomplete="off" ${contatto ? 'autofocus' : ''}>`)}
+    ${campo('Numero catalogo', `<input id="f-cat" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" enterkeyhint="next" ${contatto ? 'autofocus' : ''}>`)}
     ${campo('Note', '<textarea id="f-note"></textarea>')}
     <div class="barra"><button class="btn sec" data-chiudi>Annulla</button><button class="btn" id="crea">Crea ordine</button></div>`);
   comboContatto(radice.querySelector('#f-nome'), () => (tipo === 'A' ? 'F' : 'C'));
