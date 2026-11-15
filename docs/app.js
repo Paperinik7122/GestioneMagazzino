@@ -359,7 +359,7 @@ CREATE INDEX idx_codici_prodotto ON codici(prodotto_id);
       ${o.da_collocare?D("ambra",`${o.da_collocare} da collocare`,"pin"):""}
       ${i&&t.length?D("grigio",t.join(" \xB7 "),"pin"):""}
       ${o.impegnati?D("blu",`${o.impegnati} per ordini aperti`,"link"):""}
-    </div></a>`}function di(o,t){t.get("f")==="da_collocare"?(K.pos="da_collocare",K.testo=""):t.get("p")&&(K.pos=t.get("p"),K.testo="");let i=C(),e=xt(i),n=Ro(i);K.pos&&K.pos!=="da_collocare"&&!n.some(c=>String(c.id)===K.pos)&&(K.pos=""),o.innerHTML=`${J("Magazzino",{destra:`<button class="icon-btn" id="posizioni" aria-label="Posizioni">${E("pin",24)}</button>
+    </div></a>`}function di(o,t){t.get("f")==="da_collocare"?(K.pos="da_collocare",K.testo=""):t.get("p")&&(K.pos=t.get("p"),K.testo="");let i=C(),e=xt(i),n=Ro(i);K.pos&&K.pos!=="da_collocare"&&!n.some(c=>String(c.id)===K.pos)&&(K.pos=""),o.innerHTML=`${J("Magazzino",{destra:`<button class="icon-btn grande" id="posizioni" aria-label="Posizioni">${E("pin",32,2.2)}</button>
       <button class="icon-btn pieno" id="nuovo" aria-label="Nuovo prodotto">${E("plus",24,2.4)}</button>`})}
     <div class="ricerca">${E("search",20)}<input id="cerca" type="search" placeholder="Cerca per nome o codice" value="${p(K.testo)}" autocomplete="off"></div>
     <label class="campo"><span class="lab">Posizione</span><select id="pos">

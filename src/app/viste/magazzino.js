@@ -30,7 +30,7 @@ export function magazzino(vista, query) {
   const pos = elencoPosizioni(db);
   if (filtro.pos && filtro.pos !== 'da_collocare' && !pos.some((p) => String(p.id) === filtro.pos)) filtro.pos = '';
 
-  vista.innerHTML = `${intestazione('Magazzino', { destra: `<button class="icon-btn" id="posizioni" aria-label="Posizioni">${icona('pin', 24)}</button>
+  vista.innerHTML = `${intestazione('Magazzino', { destra: `<button class="icon-btn grande" id="posizioni" aria-label="Posizioni">${icona('pin', 32, 2.2)}</button>
       <button class="icon-btn pieno" id="nuovo" aria-label="Nuovo prodotto">${icona('plus', 24, 2.4)}</button>` })}
     <div class="ricerca">${icona('search', 20)}<input id="cerca" type="search" placeholder="Cerca per nome o codice" value="${esc(filtro.testo)}" autocomplete="off"></div>
     <label class="campo"><span class="lab">Posizione</span><select id="pos">

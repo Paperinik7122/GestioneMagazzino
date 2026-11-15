@@ -38,6 +38,7 @@ h1, h2, h3, p { margin: 0; }
 .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 0; border-radius: 14px; background: transparent; cursor: pointer; color: var(--navy); }
 .icon-btn:active { background: var(--grigio-bg); }
 .icon-btn.pieno { background: var(--navy); color: #fff; }
+.icon-btn.grande { width: 52px; height: 52px; border-radius: 16px; background: var(--grigio-bg); }
 
 /* ---------- barra in basso ---------- */
 .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; margin: 0 auto; max-width: 760px;
